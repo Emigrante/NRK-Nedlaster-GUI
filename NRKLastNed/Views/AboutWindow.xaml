@@ -1,0 +1,38 @@
+﻿<Window x:Class="NRKLastNed.Views.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Om NRK Nedlaster GUI" Height="350" Width="500"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BgDark}"
+        Foreground="{DynamicResource TextColor}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Tredjeparts-verktøy" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
+
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Dette programmet bruker følgende åpen kildekode-verktøy:" 
+                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+            <StackPanel Margin="10,0,0,15">
+                <TextBlock Foreground="{DynamicResource AccentColor}" FontWeight="Bold">
+                    • yt-dlp <Run Foreground="{DynamicResource TextMuted}" FontWeight="Normal">(Unlicense)</Run>
+                </TextBlock>
+                <TextBlock Foreground="{DynamicResource AccentColor}" FontWeight="Bold" Margin="0,5,0,0">
+                    • FFmpeg <Run Foreground="{DynamicResource TextMuted}" FontWeight="Normal">(LGPL/GPL)</Run>
+                </TextBlock>
+            </StackPanel>
+
+            <TextBlock Text="Dette programmet er ikke tilknyttet eller godkjent av NRK. All nedlasting er på eget ansvar og må kun skje i henhold til gjeldende lovverk og NRKs bruksvilkår." 
+                       TextWrapping="Wrap" FontStyle="Italic" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+
+            <TextBlock Text="Copyright © Emigrante" HorizontalAlignment="Center" FontWeight="Bold"/>
+        </StackPanel>
+
+        <Button Grid.Row="2" Content="Lukk" Click="Close_Click" Width="100" HorizontalAlignment="Right"/>
+    </Grid>
+</Window>
