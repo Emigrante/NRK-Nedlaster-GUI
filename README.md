@@ -1,55 +1,73 @@
+                          NRK NEDLASTER GUI
+
 Hei og velkommen til NRK Nedlaster GUI!
 
-Dette er et lite program jeg har snekret sammen for å gjøre det enklere å laste ned
-filmer og serier fra NRK TV. I stedet for å knote med masse kommandoer i terminalen,
-kan du nå bare lime inn linken og trykke "Start". Enkelt og greit.
+Dette programmet er laget for å gjøre det så enkelt som mulig å laste ned
+innhold fra NRK TV til din egen PC. I stedet for å knote med kompliserte
+kommandoer i terminalen, kan du her bare lime inn en lenke, trykke på
+en knapp, og la programmet gjøre resten.
 
-HVA KAN DEN GJØRE?
+------------------------------------------------------------------------
+                           HVA KAN DEN GJØRE?
+------------------------------------------------------------------------
 
-Laster ned episoder, filmer og til og med hele sesonger i en smekk.
+* Laster ned alt: Enkeltepisoder, filmer, og hele sesonger i én operasjon.
+* Best kvalitet: Finner automatisk den beste videokvaliteten (eller du kan velge manuelt).
+* Språkvalg: Velg om du vil ha norsk, svensk eller dansk "språk-tag" på lyd/undertekst.
+* Automatisk opprydding: Sletter midlertidige filer når jobben er gjort.
+* Tema: Ser bra ut i både lyst og mørkt tema (følger systemet eller velges manuelt).
+* NYHET! Automatisk oppdatering: Programmet sier nå ifra når en ny versjon er tilgjengelig.
 
-Finner automatisk beste kvalitet (eller du kan velge selv).
+------------------------------------------------------------------------
+                        HVORDAN BRUKER JEG DEN?
+------------------------------------------------------------------------
 
-Du kan velge om du vil ha norsk, svensk eller dansk "språk-tag" på lyden.
+1.  Start programmet.
+    (Første gang: Gå til "Innstillinger" oppe til høyre og velg hvor du vil at filene skal lagres. Standard er mappen "Videoer\NRK").
 
-Den rydder opp etter seg (sletter midlertidige filer automatisk).
+2.  Finn det du vil se på tv.nrk.no i nettleseren din.
 
-Ser bra ut i både lyst og mørkt tema (sjekk Innstillinger!).
+3.  Kopier nettadressen (linken) fra nettleseren.
+    (Dette kan være linken til en spesifikk episode, en film, eller hovedsiden til en serie).
 
-HVORDAN BRUKER JEG DEN?
+4.  Lim inn linken i programmet og trykk på "LEGG TIL".
 
-Start programmet.
+5.  Trykk på "START NEDLASTING" nede i høyre hjørne.
 
-Første gang: Gå inn på "Innstillinger" (oppe til høyre) og velg hvor du vil at
-filene skal lagres. Standard er "Videoer\NRK".
+6.  Vent til fremdriftslinjen er ferdig. Kos deg med seriene!
 
-Finn det du vil se på tv.nrk.no.
+------------------------------------------------------------------------
+                     OPPDATERING AV PROGRAMMET
+------------------------------------------------------------------------
 
-Kopier linken fra nettleseren (f.eks. linken til en episode eller en hel sesong).
+NRK Nedlaster GUI har nå fått innebygd sjekk for oppdateringer:
 
-Lim inn linken i programmet og trykk "LEGG TIL".
+* Programmet sjekker automatisk mot GitHub hver gang det starter.
+* Hvis en ny versjon er tilgjengelig, vil du se en beskjed i hovedvinduet.
+* For å oppdatere: Gå til "Innstillinger" og trykk på "Oppdater"-knappen.
+    Programmet vil da laste ned den nyeste versjonen, lukke seg selv, og starte installasjonen automatisk.
 
-Trykk "START NEDLASTING" nede i hjørnet.
+------------------------------------------------------------------------
+                        LITT OM VERKTØYENE BAK
+------------------------------------------------------------------------
 
-Vent til den er ferdig (du ser fremdriften). Ferdig!
+Dette programmet er et grafisk brukergrensesnitt (GUI) som styrer to svært
+kraftige verktøy som jobber i bakgrunnen:
 
-LITT OM VERKTØYENE BAK
+1.  yt-dlp (Laster ned selve videostrømmen)
+2.  ffmpeg (Setter sammen lyd og bilde til en ferdig fil)
 
-Dette programmet er egentlig bare et pent skall (GUI) rundt to veldig kraftige
-gratis-verktøy som gjør grojobben:
+Disse verktøyene må ligge i mappen "Tools" for at programmet skal fungere.
+(Du kan sjekke status og oppdatere yt-dlp direkte fra Innstillinger-menyen).
 
-yt-dlp (Gjør selve nedlastingen)
+------------------------------------------------------------------------
+                                CREDITS
+------------------------------------------------------------------------
 
-FFmpeg (Syr sammen lyd og bilde)
+Laget av: Emigrante
 
-Begge disse følger med og installeres automatisk, så du trenger ikke tenke på det.
+En stor takk til utviklerne av kjerne-verktøyene som gjør dette mulig:
+* yt-dlp (https://github.com/yt-dlp/yt-dlp)
+* FFmpeg (https://ffmpeg.org)
 
-ANSVAR OG SÅNT
-
-Dette er et hobbyprosjekt som leveres "som det er". Jeg tar ikke ansvar for om PC-en
-din begynner å ryke (det skal den ikke gjøre altså!), eller hva du velger å laste ned.
 Husk at innhold fra NRK er til privat bruk.
-
-Kos deg med seriene!
-
-Emigrante
