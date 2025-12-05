@@ -19,12 +19,9 @@ namespace NRKLastNed.Services
         private readonly string _ytDlpPath;
         private readonly string _ffmpegPath;
 
-        // Telle-logikk for fremdrift
         private int _mediaFileCounter = 0;
         private bool _isIgnoringCurrentFile = false;
         private double _maxReportedPercent = 0;
-
-        // NY: For å hindre logg-spam (oppdaterer kun ved endring)
         private double _lastLoggedPercent = -1;
 
         public YtDlpService(AppSettings settings)
@@ -62,8 +59,6 @@ namespace NRKLastNed.Services
             var startInfo = new ProcessStartInfo
             {
                 FileName = _ytDlpPath,
-                // -J henter all info som JSON. --flat-playlist gjør det raskere hvis det er en lang serie,
-                // men vi trenger format-info, så vi kjører full analyse.
                 Arguments = $"-J \"{url}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -195,7 +190,8 @@ namespace NRKLastNed.Services
             if (!string.IsNullOrEmpty(season) && !string.IsNullOrEmpty(episode))
             {
                 seInfo = $"S{int.Parse(season):00}E{int.Parse(episode):00}";
-                displayTitle = $"{series} - {cleanTitle}";
+                // ENDRET: Nytt format: Serie - SxxExx - Tittel
+                displayTitle = $"{series} - {seInfo} - {cleanTitle}";
             }
             else
             {
@@ -225,7 +221,9 @@ namespace NRKLastNed.Services
             if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
             if (!Directory.Exists(_settings.OutputFolder)) Directory.CreateDirectory(_settings.OutputFolder);
 
-            string fileNameBase = !string.IsNullOrEmpty(item.SeasonEpisode) ? $"{item.Title} - {item.SeasonEpisode}" : item.Title;
+            // ENDRET: Bruker Title direkte siden den nå allerede inneholder SxxExx på riktig plass
+            string fileNameBase = item.Title;
+
             string resTag = item.SelectedResolution == "best" ? "" : $" - {item.SelectedResolution}p";
             string finalFileName = SanitizeFileName($"{fileNameBase}{resTag}.mkv");
             string fullOutputPath = Path.Combine(tempPath, finalFileName);
@@ -236,7 +234,6 @@ namespace NRKLastNed.Services
 
             string metadataArgs = $"--postprocessor-args \"FFmpeg:-metadata:s:a:0 language={langCode}\"";
 
-            // NYTT: La til "-N 4" for parallell nedlasting av fragmenter (Øker hastighet!)
             string args = $"-N 4 -o \"{fullOutputPath}\" --remux-video mkv -S {formatSelector} --embed-subs --embed-thumbnail --no-mtime --convert-subs srt {metadataArgs} --ffmpeg-location \"{_ffmpegPath}\" --progress --newline \"{item.Url}\"";
 
             var startInfo = new ProcessStartInfo
@@ -253,11 +250,10 @@ namespace NRKLastNed.Services
             LogService.Log($"Starter nedlasting: {item.Title}", LogLevel.Info, _settings);
             LogService.Log($"Kommando: yt-dlp {args}", LogLevel.Debug, _settings);
 
-            // Nullstill tellere for denne filen
             _mediaFileCounter = 0;
             _isIgnoringCurrentFile = false;
             _maxReportedPercent = 0;
-            _lastLoggedPercent = -1; // Reset spam-filter
+            _lastLoggedPercent = -1;
 
             using (var process = new Process { StartInfo = startInfo })
             {
@@ -276,7 +272,6 @@ namespace NRKLastNed.Services
                     {
                         if (!string.IsNullOrEmpty(e.Data) && _settings.LogLevel == LogLevel.Debug)
                         {
-                            // Bare logg error output hvis det IKKE er standard info
                             if (!e.Data.StartsWith("[download]") && !e.Data.StartsWith("[info]"))
                                 LogService.Log($"yt-dlp info: {e.Data.Trim()}", LogLevel.Debug, _settings);
                         }
@@ -295,7 +290,6 @@ namespace NRKLastNed.Services
                         LogService.Log($"Avbrutt: {item.Title}", LogLevel.Info, _settings);
                         try { if (!process.HasExited) process.Kill(); } catch { }
 
-                        // Rydd opp
                         try
                         {
                             await Task.Delay(500);
@@ -359,7 +353,6 @@ namespace NRKLastNed.Services
 
         private void ParseProgress(string line, IProgress<string> text, IProgress<double> percent)
         {
-            // Optimalisering: Ignorer spam i debug-loggen hvis det bare er [download] linjer uten endring
             bool isDownloadLine = line.StartsWith("[download]");
 
             var match = Regex.Match(line, @"\[download\]\s+(\d+(\.\d+)?)%");
@@ -376,9 +369,6 @@ namespace NRKLastNed.Services
 
                 if (calculatedPercent > 99) calculatedPercent = 99;
 
-                // VIKTIG OPTIMALISERING:
-                // Oppdater kun UI og Logg hvis endringen er større enn 1% eller vi er ferdige.
-                // Dette sparer CPU og gjør loggen mye mer lesbar.
                 if (Math.Abs(calculatedPercent - _lastLoggedPercent) >= 1.0 || rawPercent >= 100)
                 {
                     percent.Report(calculatedPercent);
@@ -391,7 +381,7 @@ namespace NRKLastNed.Services
 
                     _lastLoggedPercent = calculatedPercent;
                 }
-                return; // Returner her for å unngå å logge hver eneste linje nedenfor
+                return;
             }
 
             if (line.Contains("[Merger]") || line.Contains("Merging formats") || line.Contains("[VideoRemuxer]") || line.Contains("Writing video"))
