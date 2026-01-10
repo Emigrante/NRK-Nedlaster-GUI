@@ -1,0 +1,154 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="650"
+        x:Class="NRKLastNed.Mac.Views.SettingsWindow"
+        Title="Innstillinger" Height="650" Width="700"
+        MinHeight="500" MinWidth="600"
+        Background="{DynamicResource BgDark}"
+        Foreground="{DynamicResource TextColor}"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="INNSTILLINGER" FontSize="20" FontWeight="Bold" 
+                      Foreground="{DynamicResource AccentColor}" Margin="0,0,0,20"/>
+
+            <TextBlock Grid.Row="1" Text="Nedlastningsmappe:" Margin="0,0,0,5"/>
+            <Grid Grid.Row="2" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="txtOutput" IsReadOnly="True"/>
+                <Button Grid.Column="1" Content="..." Click="BrowseOutput_Click" Margin="10,0,0,0" Width="40"/>
+            </Grid>
+
+            <Border Grid.Row="3" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" 
+                   CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Midlertidige filer" Foreground="{DynamicResource AccentColor}" 
+                              FontWeight="Bold" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="chkUseSystemTemp" Content="Bruk standard macOS temp mappe" 
+                              Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" 
+                              Checked="chkUseSystemTemp_Checked" Unchecked="chkUseSystemTemp_Unchecked"/>
+
+                    <Grid x:Name="pnlCustomTemp" IsEnabled="False">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtTemp" IsReadOnly="True" Text="Velg mappe for temp filer..."/>
+                        <Button Grid.Column="1" Content="..." Click="BrowseTemp_Click" Margin="10,0,0,0" Width="40"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="4" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" 
+                   CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Standard oppløsning:" Margin="0,0,0,5"/>
+                        <ComboBox x:Name="cmbResolution"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Fargetema:" Margin="0,0,0,5"/>
+                        <ComboBox x:Name="cmbTheme"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="5" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" 
+                   CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Verktøy og Oppdateringer" Foreground="{DynamicResource AccentColor}" 
+                              FontWeight="Bold" Margin="0,0,0,10"/>
+
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Programversjon:" FontWeight="Bold"/>
+                            <TextBlock x:Name="lblAppVersion" Text="Sjekker..." Foreground="{DynamicResource TextMuted}"/>
+                        </StackPanel>
+                        <Button x:Name="btnAppUpdate" Grid.Column="1" Content="Oppdater" Click="AppUpdate_Click" Width="100" IsEnabled="False"/>
+                    </Grid>
+
+                    <Separator Background="{DynamicResource BorderColor}" Margin="0,0,0,15"/>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="yt-dlp status:" FontWeight="Bold"/>
+                            <TextBlock x:Name="lblYtDlpVersion" Text="Sjekker versjon..." Foreground="{DynamicResource TextMuted}"/>
+                        </StackPanel>
+                        <Button x:Name="btnYtDlpUpdate" Grid.Column="1" Content="Oppdater yt-dlp" Click="UpdateYtDlp_Click" Width="140" IsEnabled="False"/>
+                    </Grid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="FFmpeg status:" FontWeight="Bold"/>
+                            <TextBlock x:Name="lblFfmpegVersion" Text="Sjekker..." Foreground="{DynamicResource TextMuted}"/>
+                        </StackPanel>
+                        <Button x:Name="btnFfmpegUpdate" Grid.Column="1" Content="Oppdater FFmpeg" Click="GetFfmpeg_Click" Width="140" IsEnabled="False"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="6" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" 
+                   CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Logging" Foreground="{DynamicResource AccentColor}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="chkEnableLog" Content="Aktiver Logging til fil" 
+                             Foreground="{DynamicResource TextColor}" Margin="0,0,0,10"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Loggnivå:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="cmbLogLevel" Width="150"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Loggfiler lagres i mappen 'Logs' der programmet kjører." 
+                              Foreground="{DynamicResource TextMuted}" FontSize="10" Margin="0,5,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Grid.Row="7" Text="INFO: yt-dlp og ffmpeg må ligge i 'Tools' mappen (uten .exe på macOS)." 
+                      Foreground="{DynamicResource TextMuted}" FontStyle="Italic" Margin="0,0,0,20"/>
+
+            <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Lagre" Click="Save_Click" Width="100" Margin="0,0,10,0"/>
+                <Button Content="Avbryt" Click="Cancel_Click" Width="100"/>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Window>
