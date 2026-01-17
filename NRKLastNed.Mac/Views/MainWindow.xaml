@@ -1,0 +1,126 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:NRKLastNed.Mac.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="600"
+        x:Class="NRKLastNed.Mac.Views.MainWindow"
+        Title="NRK Nedlaster GUI" Height="600" Width="1050"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BgDark}"
+        Foreground="{DynamicResource TextColor}">
+
+    <Design.DataContext>
+        <vm:MainViewModel/>
+    </Design.DataContext>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="NRK NEDLASTER GUI" FontSize="24" FontWeight="Bold" 
+                   Foreground="{DynamicResource AccentColor}" VerticalAlignment="Top"/>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
+            <TextBlock Text="{Binding UpdateNotificationText}" 
+                       Foreground="#FF4444" 
+                       FontWeight="Bold" 
+                       VerticalAlignment="Center" 
+                       Margin="0,0,20,0"
+                       FontSize="14"/>
+
+            <Button Content="Innstillinger" Click="OpenSettings_Click" Margin="0,0,10,0"/>
+            <Button Content="Om" Click="OpenAbout_Click"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="10" Padding="15" Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="URL (Serie, Episode eller Film):" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                <TextBox Grid.Column="1" 
+                         Text="{Binding InputUrl}" 
+                         FontSize="14" 
+                         Background="{DynamicResource BgInput}"
+                         BorderBrush="{DynamicResource BorderColor}"
+                         BorderThickness="1"
+                         VerticalContentAlignment="Center"
+                         Padding="8,5"/>
+
+                <Button Grid.Column="2" Content="LEGG TIL" Command="{Binding AddCommand}" Margin="10,0,0,0" Width="100"/>
+            </Grid>
+        </Border>
+
+        <DataGrid Grid.Row="2" ItemsSource="{Binding DownloadItems}" 
+                  SelectedItem="{Binding SelectedGridItem}"
+                  AutoGenerateColumns="False" Background="{DynamicResource BgLight}" 
+                  HeadersVisibility="Column" BorderThickness="0"
+                  RowBackground="{DynamicResource BgLight}" Foreground="{DynamicResource TextColor}"
+                  GridLinesVisibility="None" CanUserAddRows="False">
+
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="#" Binding="{Binding IsSelected}" Width="40"/>
+                <DataGridTextColumn Header="Sesong/Ep" Binding="{Binding SeasonEpisode}" Width="80" IsReadOnly="True"/>
+                <DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="*" IsReadOnly="True"/>
+
+                <DataGridTemplateColumn Header="Oppløsning" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding AvailableResolutions}" 
+                                      SelectedItem="{Binding SelectedResolution, Mode=TwoWay}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Lydspråk" Width="120">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding AvailableLanguages}" 
+                                      SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="180" IsReadOnly="True"/>
+
+                <DataGridTemplateColumn Header="Fremdrift" Width="200">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="15" 
+                                        Foreground="{DynamicResource AccentColor}" 
+                                        Background="#444" BorderThickness="0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Grid Grid.Row="3" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextMuted}"/>
+                <TextBlock Text="{Binding BatchStatusMessage}" Foreground="{DynamicResource AccentColor}" 
+                          FontSize="11" Margin="0,2,0,0"/>
+                <ProgressBar Value="{Binding TotalProgress}" Height="5" Margin="0,5,10,0" 
+                            Background="#333" BorderThickness="0" 
+                            Foreground="{DynamicResource AccentColor}"/>
+            </StackPanel>
+
+            <Button Grid.Column="1" Content="{Binding StartButtonText}" Command="{Binding DownloadCommand}" 
+                   FontSize="16" Padding="30,10"/>
+        </Grid>
+    </Grid>
+</Window>

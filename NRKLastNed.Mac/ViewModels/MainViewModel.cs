@@ -1,16 +1,19 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows;
 using System.Linq;
-using NRKLastNed.Models;
-using NRKLastNed.Services;
+using NRKLastNed.Mac.Models;
+using NRKLastNed.Mac.Services;
 using System.Threading.Tasks;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Media;
+using Avalonia.Threading;
 
-namespace NRKLastNed.ViewModels
+namespace NRKLastNed.Mac.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
@@ -27,7 +30,6 @@ namespace NRKLastNed.ViewModels
         private CancellationTokenSource _cts;
         private string _startButtonText = "START NEDLASTING";
 
-        // NYTT FELT: For varsling om oppdatering
         private string _updateNotificationText;
 
         public MainViewModel()
@@ -45,11 +47,9 @@ namespace NRKLastNed.ViewModels
 
             LogService.Log("Applikasjon startet", LogLevel.Info, _settings);
 
-            // NYTT KALL: Sjekk etter oppdatering i bakgrunnen ved start
             _ = CheckAppUpdateSilentAsync();
         }
 
-        // NY PROPERTY: Tekst som vises i GUI hvis ny versjon finnes
         public string UpdateNotificationText
         {
             get => _updateNotificationText;
@@ -122,7 +122,6 @@ namespace NRKLastNed.ViewModels
             LogService.Log("Innstillinger oppdatert", LogLevel.Info, _settings);
         }
 
-        // NY METODE: Sjekker oppdatering uten å forstyrre brukeren
         private async Task CheckAppUpdateSilentAsync()
         {
             var updateService = new AppUpdateService();
@@ -151,13 +150,24 @@ namespace NRKLastNed.ViewModels
 
         private void OpenDownloadFolder()
         {
-            if (System.IO.Directory.Exists(_settings.OutputFolder)) Process.Start("explorer.exe", _settings.OutputFolder);
-            else MessageBox.Show("Mappen finnes ikke ennå.", "Info");
+            if (System.IO.Directory.Exists(_settings.OutputFolder))
+            {
+                PlatformHelper.OpenFolder(_settings.OutputFolder);
+            }
+            else
+            {
+                ShowMessageBox("Mappen finnes ikke ennå.", "Info");
+            }
         }
 
         private async Task AddAndAnalyzeAsync()
         {
             if (string.IsNullOrWhiteSpace(InputUrl)) return;
+            if (IsDownloading)
+            {
+                ShowMessageBox("Kan ikke legge til mens nedlasting pågår.");
+                return;
+            }
 
             string urlToProcess = InputUrl;
             InputUrl = "";
@@ -165,7 +175,7 @@ namespace NRKLastNed.ViewModels
             StatusMessage = "Sjekker verktøy...";
             if (!_service.ValidateTools(out string msg))
             {
-                MessageBox.Show(msg, "Mangler verktøy", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowMessageBox(msg, "Mangler verktøy");
                 StatusMessage = "Mangler verktøy - se 'Tools' mappe.";
                 return;
             }
@@ -261,7 +271,7 @@ namespace NRKLastNed.ViewModels
             finally
             {
                 IsDownloading = false;
-                _cts.Dispose();
+                _cts?.Dispose();
                 _cts = null;
 
                 if (StatusMessage != "Nedlasting avbrutt av bruker.")
@@ -275,6 +285,40 @@ namespace NRKLastNed.ViewModels
                     BatchStatusMessage = "Stoppet.";
                 }
             }
+        }
+
+        private async void ShowMessageBox(string message, string title = "Info")
+        {
+            var window = GetMainWindow();
+            if (window != null)
+            {
+                // Using Avalonia's Window for message box
+                var dialog = new Window
+                {
+                    Title = title,
+                    Width = 400,
+                    Height = 200,
+                    Content = new TextBlock 
+                    { 
+                        Text = message, 
+                        TextWrapping = TextWrapping.Wrap,
+                        Margin = new Avalonia.Thickness(20)
+                    },
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    ShowInTaskbar = false,
+                    CanResize = false
+                };
+                await dialog.ShowDialog(window);
+            }
+        }
+
+        private Window GetMainWindow()
+        {
+            if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                return desktop.MainWindow;
+            }
+            return null;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
