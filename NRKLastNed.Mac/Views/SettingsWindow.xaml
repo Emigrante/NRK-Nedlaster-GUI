@@ -9,7 +9,7 @@
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="CanResize">
+        CanResize="True">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <Grid Margin="20">
