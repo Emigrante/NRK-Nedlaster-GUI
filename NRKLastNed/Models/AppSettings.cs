@@ -21,7 +21,29 @@ namespace NRKLastNed.Models
         public bool EnableLogging { get; set; } = true;
         public LogLevel LogLevel { get; set; } = LogLevel.Info;
 
-        private static string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        private static string SettingsPath
+        {
+            get
+            {
+                // Lagre i brukerens AppData-mappe i stedet for programmappen
+                // Dette gir skriverettigheter uten å trenge admin
+                string appDataFolder = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "NRKLastNed");
+                
+                // Opprett mappen hvis den ikke eksisterer
+                if (!Directory.Exists(appDataFolder))
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(appDataFolder);
+                    }
+                    catch { }
+                }
+                
+                return Path.Combine(appDataFolder, "settings.json");
+            }
+        }
 
         public static void Save(AppSettings settings)
         {
