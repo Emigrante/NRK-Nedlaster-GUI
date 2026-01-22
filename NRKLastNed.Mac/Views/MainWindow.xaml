@@ -3,8 +3,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:NRKLastNed.Mac.ViewModels"
+        xmlns:models="clr-namespace:NRKLastNed.Mac.Models"
         mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="600"
         x:Class="NRKLastNed.Mac.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
         Title="NRK Nedlaster GUI" Height="600" Width="1050"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BgDark}"
@@ -60,49 +62,63 @@
             </Grid>
         </Border>
 
-        <DataGrid Grid.Row="2" ItemsSource="{Binding DownloadItems}" 
-                  SelectedItem="{Binding SelectedGridItem}"
-                  AutoGenerateColumns="False" Background="{DynamicResource BgLight}" 
-                  HeadersVisibility="Column" BorderThickness="0"
-                  RowBackground="{DynamicResource BgLight}" Foreground="{DynamicResource TextColor}"
-                  GridLinesVisibility="None" CanUserAddRows="False">
-
-            <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="#" Binding="{Binding IsSelected}" Width="40"/>
-                <DataGridTextColumn Header="Sesong/Ep" Binding="{Binding SeasonEpisode}" Width="80" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="*" IsReadOnly="True"/>
-
-                <DataGridTemplateColumn Header="Oppløsning" Width="120">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding AvailableResolutions}" 
-                                      SelectedItem="{Binding SelectedResolution, Mode=TwoWay}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTemplateColumn Header="Lydspråk" Width="120">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding AvailableLanguages}" 
-                                      SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="180" IsReadOnly="True"/>
-
-                <DataGridTemplateColumn Header="Fremdrift" Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="15" 
-                                        Foreground="{DynamicResource AccentColor}" 
-                                        Background="#444" BorderThickness="0"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
+        <Border Grid.Row="2" Background="{DynamicResource BgLight}" CornerRadius="5">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- Header -->
+                <Grid Grid.Row="0" Background="{DynamicResource BgDark}" Height="30">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="150"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="#" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="1" Text="S/Ep" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="2" Text="Tittel" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="3" Text="Oppløsning" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="4" Text="Språk" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="5" Text="Status" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="6" Text="Fremdrift" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                </Grid>
+                
+                <!-- Items -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding DownloadItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:DownloadItem">
+                                <Grid Height="35" Background="{DynamicResource BgLight}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="150"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding SeasonEpisode}" VerticalAlignment="Center" Margin="5,0"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Title}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
+                                    <ComboBox Grid.Column="3" ItemsSource="{Binding AvailableResolutions}" SelectedItem="{Binding SelectedResolution}" VerticalAlignment="Center" Margin="2"/>
+                                    <ComboBox Grid.Column="4" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" VerticalAlignment="Center" Margin="2"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding Status}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
+                                    <ProgressBar Grid.Column="6" Value="{Binding Progress}" Maximum="100" Height="15" VerticalAlignment="Center" Margin="5,0"
+                                                Foreground="{DynamicResource AccentColor}" Background="#444"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
 
         <Grid Grid.Row="3" Margin="0,20,0,0">
             <Grid.ColumnDefinitions>

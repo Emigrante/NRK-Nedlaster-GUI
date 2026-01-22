@@ -5,7 +5,7 @@
         mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="350"
         x:Class="NRKLastNed.Mac.Views.AboutWindow"
         Title="Om NRK Nedlaster GUI" Height="350" Width="500"
-        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        CanResize="False" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}">
     <Grid Margin="20">
