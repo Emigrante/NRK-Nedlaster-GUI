@@ -1,0 +1,42 @@
+name: Build Mac Version
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-mac:
+    name: Build macOS App
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Publish Mac Version
+      # Bygger Mac-prosjektet
+      run: dotnet publish NRKLastNed.Mac/NRKLastNed.Mac.csproj -c Release -r osx-x64 --self-contained -o ./publish/mac
+      
+    - name: Fix Permissions
+      run: |
+        chmod +x ./publish/mac/NRKLastNed.Mac
+        
+    - name: Zip Mac Release
+      # Pakker alt inn i en ZIP som Mac-brukere kan laste ned
+      run: |
+        cd publish/mac
+        zip -r ../../NRKLastNed-MacOS-x64.zip .
+        cd ../..
+      
+    - name: Upload Mac Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./NRKLastNed-MacOS-x64.zip
+        asset_name: NRKLastNed-MacOS-x64.zip
+        asset_content_type: application/zip
