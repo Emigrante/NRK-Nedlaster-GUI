@@ -10,7 +10,7 @@ namespace NRKLastNed.Mac.Views
             InitializeComponent();
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e)
+        private void Ok_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }

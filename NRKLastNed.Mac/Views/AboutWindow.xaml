@@ -2,40 +2,41 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="500" d:DesignHeight="350"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
         x:Class="NRKLastNed.Mac.Views.AboutWindow"
-        Title="Om NRK Nedlaster GUI" Height="350" Width="500"
-        ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
+        Title="Om NRK Last Ned"
+        Width="400" Height="250"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
 
-        <TextBlock Text="Tredjeparts-verktøy" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
+	<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="15" Margin="20">
 
-        <StackPanel Grid.Row="1">
-            <TextBlock Text="Dette programmet bruker følgende åpen kildekode-verktøy:" 
-                       TextWrapping="Wrap" Margin="0,0,0,10"/>
+		<TextBlock Text="NRK Last Ned"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource AccentColor}"
+                   HorizontalAlignment="Center"/>
 
-            <StackPanel Margin="10,0,0,15">
-                <TextBlock Foreground="{DynamicResource AccentColor}" FontWeight="Bold">
-                    • yt-dlp <Run Foreground="{DynamicResource TextMuted}" FontWeight="Normal">(Unlicense)</Run>
-                </TextBlock>
-                <TextBlock Foreground="{DynamicResource AccentColor}" FontWeight="Bold" Margin="0,5,0,0">
-                    • FFmpeg <Run Foreground="{DynamicResource TextMuted}" FontWeight="Normal">(LGPL/GPL)</Run>
-                </TextBlock>
-            </StackPanel>
+		<TextBlock Text="En enkel nedlaster for NRK TV og Radio"
+                   FontStyle="Italic"
+                   HorizontalAlignment="Center"/>
 
-            <TextBlock Text="Dette programmet er ikke tilknyttet eller godkjent av NRK. All nedlasting er på eget ansvar og må kun skje i henhold til gjeldende lovverk og NRKs bruksvilkår." 
-                       TextWrapping="Wrap" FontStyle="Italic" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
+		<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="5">
+			<TextBlock Text="Versjon:" FontWeight="Bold"/>
+			<TextBlock Text="1.0.7"/>
+		</StackPanel>
 
-            <TextBlock Text="Copyright © Emigrante" HorizontalAlignment="Center" FontWeight="Bold"/>
-        </StackPanel>
+		<TextBlock Text="Utviklet av Emigrante"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextMuted}"
+                   HorizontalAlignment="Center"/>
 
-        <Button Grid.Row="2" Content="Lukk" Click="Close_Click" Width="100" HorizontalAlignment="Right"/>
-    </Grid>
+		<Button Content="OK"
+                Click="Ok_Click"
+                HorizontalAlignment="Center"
+                Width="100"
+                Margin="0,10,0,0"/>
+	</StackPanel>
 </Window>

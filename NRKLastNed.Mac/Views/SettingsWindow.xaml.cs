@@ -19,9 +19,9 @@ namespace NRKLastNed.Mac.Views
         private AppUpdateService _appUpdateService;
         private FfmpegUpdateService _ffmpegUpdateService;
 
-        private AppUpdateService.AppUpdateInfo _pendingAppUpdate;
-        private UpdateService.ToolUpdateInfo _pendingYtDlpUpdate;
-        private FfmpegUpdateService.FfmpegUpdateInfo _pendingFfmpegUpdate;
+        private AppUpdateService.AppUpdateInfo? _pendingAppUpdate;
+        private UpdateService.ToolUpdateInfo? _pendingYtDlpUpdate;
+        private FfmpegUpdateService.FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
         public SettingsWindow()
         {
@@ -61,7 +61,7 @@ namespace NRKLastNed.Mac.Views
 
             _pendingAppUpdate = await _appUpdateService.CheckForAppUpdatesAsync();
 
-            if (_pendingAppUpdate.IsNewVersionAvailable)
+            if (_pendingAppUpdate != null && _pendingAppUpdate.IsNewVersionAvailable)
             {
                 lblAppVersion.Text = $"Ny versjon tilgjengelig ({_pendingAppUpdate.LatestVersion})";
                 btnAppUpdate.Content = "Oppdater";
@@ -80,23 +80,26 @@ namespace NRKLastNed.Mac.Views
 
             _pendingYtDlpUpdate = await _toolUpdateService.CheckForYtDlpUpdateAsync();
 
-            if (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent")
+            if (_pendingYtDlpUpdate != null)
             {
-                lblYtDlpVersion.Text = "Mangler (Må lastes ned)";
-                btnYtDlpUpdate.Content = "Last ned";
-                btnYtDlpUpdate.IsEnabled = true;
-            }
-            else if (_pendingYtDlpUpdate.IsNewVersionAvailable)
-            {
-                lblYtDlpVersion.Text = "Ny versjon tilgjengelig";
-                btnYtDlpUpdate.Content = "Oppdater";
-                btnYtDlpUpdate.IsEnabled = true;
-            }
-            else
-            {
-                lblYtDlpVersion.Text = "Siste versjon installert";
-                btnYtDlpUpdate.Content = "Oppdatert";
-                btnYtDlpUpdate.IsEnabled = false;
+                if (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent")
+                {
+                    lblYtDlpVersion.Text = "Mangler (Må lastes ned)";
+                    btnYtDlpUpdate.Content = "Last ned";
+                    btnYtDlpUpdate.IsEnabled = true;
+                }
+                else if (_pendingYtDlpUpdate.IsNewVersionAvailable)
+                {
+                    lblYtDlpVersion.Text = "Ny versjon tilgjengelig";
+                    btnYtDlpUpdate.Content = "Oppdater";
+                    btnYtDlpUpdate.IsEnabled = true;
+                }
+                else
+                {
+                    lblYtDlpVersion.Text = "Siste versjon installert";
+                    btnYtDlpUpdate.Content = "Oppdatert";
+                    btnYtDlpUpdate.IsEnabled = false;
+                }
             }
 
             // 3. FFMPEG UPDATE
@@ -112,7 +115,7 @@ namespace NRKLastNed.Mac.Views
                 btnFfmpegUpdate.Content = "Last ned";
                 btnFfmpegUpdate.IsEnabled = true;
             }
-            else if (_pendingFfmpegUpdate.IsNewVersionAvailable)
+            else if (_pendingFfmpegUpdate != null && _pendingFfmpegUpdate.IsNewVersionAvailable)
             {
                 lblFfmpegVersion.Text = "Ny versjon tilgjengelig";
                 btnFfmpegUpdate.Content = "Oppdater";
@@ -141,6 +144,8 @@ namespace NRKLastNed.Mac.Views
 
         private async void UpdateYtDlp_Click(object sender, RoutedEventArgs e)
         {
+            if (_pendingYtDlpUpdate == null) return;
+
             btnYtDlpUpdate.IsEnabled = false;
             lblYtDlpVersion.Text = "Jobber...";
 
