@@ -2,19 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="NRKLastNed.Mac.App"
              RequestedThemeVariant="Dark">
-    <Application.Styles>
-        <FluentTheme />
-    </Application.Styles>
-    <Application.Resources>
-        <!-- Standard farger (Startverdier) -->
-        <SolidColorBrush x:Key="BgDark" Color="#1E1E24"/>
-        <SolidColorBrush x:Key="BgLight" Color="#2D2D35"/>
-        <SolidColorBrush x:Key="BgInput" Color="#1E1E24"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#00E5FF"/>
-        <SolidColorBrush x:Key="AccentDark" Color="#00B8D4"/>
-        <SolidColorBrush x:Key="TextColor" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#AAAAAA"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#555555"/>
-        <SolidColorBrush x:Key="ButtonText" Color="Black"/>
-    </Application.Resources>
+	<Application.Styles>
+		<FluentTheme />
+		<StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
+	</Application.Styles>
+
+	<Application.Resources>
+		<SolidColorBrush x:Key="BgDark" Color="#1E1E24"/>
+		<SolidColorBrush x:Key="BgLight" Color="#2D2D35"/>
+		<SolidColorBrush x:Key="BgInput" Color="#1E1E24"/>
+		<SolidColorBrush x:Key="AccentColor" Color="#00E5FF"/>
+		<SolidColorBrush x:Key="AccentDark" Color="#00B8D4"/>
+		<SolidColorBrush x:Key="TextColor" Color="#FFFFFF"/>
+		<SolidColorBrush x:Key="TextMuted" Color="#AAAAAA"/>
+		<SolidColorBrush x:Key="BorderColor" Color="#555555"/>
+		<SolidColorBrush x:Key="ButtonText" Color="Black"/>
+	</Application.Resources>
 </Application>

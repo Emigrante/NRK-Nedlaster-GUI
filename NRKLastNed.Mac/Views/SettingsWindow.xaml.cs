@@ -1,18 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform.Storage;
 using NRKLastNed.Mac.Models;
 using NRKLastNed.Mac.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace NRKLastNed.Mac.Views
 {
@@ -92,16 +90,13 @@ namespace NRKLastNed.Mac.Views
 
         private async Task CheckVersionsAsync()
         {
+            // 1. APP UPDATE
             lblAppVersion.Text = "Sjekker...";
             btnAppUpdate.IsEnabled = false;
 
-#if DEBUG
-            lblAppVersion.Text = "Dev Mode";
-            btnAppUpdate.IsEnabled = false;
-#else
             _pendingAppUpdate = await _appUpdateService.CheckForAppUpdatesAsync();
 
-            if (_pendingAppUpdate.IsNewVersionAvailable)
+            if (_pendingAppUpdate != null && _pendingAppUpdate.IsNewVersionAvailable)
             {
                 lblAppVersion.Text = $"Ny versjon tilgjengelig ({_pendingAppUpdate.LatestVersion})";
                 btnAppUpdate.Content = "Oppdater";
@@ -113,32 +108,36 @@ namespace NRKLastNed.Mac.Views
                 btnAppUpdate.Content = "Oppdatert";
                 btnAppUpdate.IsEnabled = false;
             }
-#endif
 
+            // 2. YT-DLP UPDATE
             lblYtDlpVersion.Text = "Sjekker...";
             btnYtDlpUpdate.IsEnabled = false;
 
             _pendingYtDlpUpdate = await _toolUpdateService.CheckForYtDlpUpdateAsync();
 
-            if (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent")
+            if (_pendingYtDlpUpdate != null)
             {
-                lblYtDlpVersion.Text = "Mangler (Må lastes ned)";
-                btnYtDlpUpdate.Content = "Last ned";
-                btnYtDlpUpdate.IsEnabled = true;
-            }
-            else if (_pendingYtDlpUpdate.IsNewVersionAvailable)
-            {
-                lblYtDlpVersion.Text = "Ny versjon tilgjengelig";
-                btnYtDlpUpdate.Content = "Oppdater";
-                btnYtDlpUpdate.IsEnabled = true;
-            }
-            else
-            {
-                lblYtDlpVersion.Text = "Siste versjon installert";
-                btnYtDlpUpdate.Content = "Oppdatert";
-                btnYtDlpUpdate.IsEnabled = false;
+                if (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent")
+                {
+                    lblYtDlpVersion.Text = "Mangler (Må lastes ned)";
+                    btnYtDlpUpdate.Content = "Last ned";
+                    btnYtDlpUpdate.IsEnabled = true;
+                }
+                else if (_pendingYtDlpUpdate.IsNewVersionAvailable)
+                {
+                    lblYtDlpVersion.Text = "Ny versjon tilgjengelig";
+                    btnYtDlpUpdate.Content = "Oppdater";
+                    btnYtDlpUpdate.IsEnabled = true;
+                }
+                else
+                {
+                    lblYtDlpVersion.Text = "Siste versjon installert";
+                    btnYtDlpUpdate.Content = "Oppdatert";
+                    btnYtDlpUpdate.IsEnabled = false;
+                }
             }
 
+            // 3. FFMPEG UPDATE
             lblFfmpegVersion.Text = "Sjekker...";
             btnFfmpegUpdate.IsEnabled = false;
 
@@ -151,7 +150,7 @@ namespace NRKLastNed.Mac.Views
                 btnFfmpegUpdate.Content = "Last ned";
                 btnFfmpegUpdate.IsEnabled = true;
             }
-            else if (_pendingFfmpegUpdate.IsNewVersionAvailable)
+            else if (_pendingFfmpegUpdate != null && _pendingFfmpegUpdate.IsNewVersionAvailable)
             {
                 lblFfmpegVersion.Text = "Ny versjon tilgjengelig";
                 btnFfmpegUpdate.Content = "Oppdater";
@@ -169,7 +168,6 @@ namespace NRKLastNed.Mac.Views
         {
             if (_pendingAppUpdate == null || !_pendingAppUpdate.IsNewVersionAvailable) return;
 
-            // Simple confirmation dialog
             var result = await ShowMessageBoxAsync($"Vil du oppdatere til {_pendingAppUpdate.LatestVersion}?", "Oppdatering", MessageBoxType.Question);
             if (result == MessageBoxResult.Yes)
             {
@@ -181,6 +179,8 @@ namespace NRKLastNed.Mac.Views
 
         private async void UpdateYtDlp_Click(object sender, RoutedEventArgs e)
         {
+            if (_pendingYtDlpUpdate == null) return;
+
             btnYtDlpUpdate.IsEnabled = false;
             lblYtDlpVersion.Text = "Jobber...";
 
@@ -197,8 +197,8 @@ namespace NRKLastNed.Mac.Views
 
             if (_pendingFfmpegUpdate != null && _pendingFfmpegUpdate.IsNewVersionAvailable)
             {
-                var result = await ShowMessageBoxAsync($"Vil du laste ned FFmpeg ({_pendingFfmpegUpdate.LatestVersion})?\nStørrelse: ~80 MB", 
-                    "Oppdater FFmpeg", MessageBoxType.Question);
+                var result = await ShowMessageBoxAsync($"Vil du laste ned FFmpeg ({_pendingFfmpegUpdate.LatestVersion})?\nStørrelse: ~80 MB",
+                     "Oppdater FFmpeg", MessageBoxType.Question);
 
                 if (result == MessageBoxResult.Yes)
                 {
@@ -257,7 +257,7 @@ namespace NRKLastNed.Mac.Views
         private void chkUseSystemTemp_Checked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = false;
         private void chkUseSystemTemp_Unchecked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = true;
 
-        private async void Save_Click(object sender, RoutedEventArgs e)
+        private void Save_Click(object sender, RoutedEventArgs e)
         {
             _settings.OutputFolder = txtOutput.Text;
             _settings.TempFolder = txtTemp.Text;
@@ -276,19 +276,17 @@ namespace NRKLastNed.Mac.Views
             if (cmbLogLevel.SelectedItem is LogLevel level) _settings.LogLevel = level;
 
             AppSettings.Save(_settings);
-            // Close with result true
             Close(true);
         }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
-            // Close with result false
             Close(false);
         }
 
+        // Hjelpefunksjoner for MessageBox i Avalonia
         private async Task<MessageBoxResult> ShowMessageBoxAsync(string message, string title, MessageBoxType type)
         {
-            // For Question type, we need Yes/No buttons
             if (type == MessageBoxType.Question)
             {
                 var dialog = new Window
@@ -300,29 +298,23 @@ namespace NRKLastNed.Mac.Views
                     ShowInTaskbar = false,
                     CanResize = false
                 };
-                
                 var panel = new StackPanel { Margin = new Avalonia.Thickness(20) };
                 panel.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Avalonia.Thickness(0, 0, 0, 10) });
-                
                 var buttonPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
                 var yesButton = new Button { Content = "Ja", Margin = new Avalonia.Thickness(0, 0, 10, 0), Width = 80 };
                 var noButton = new Button { Content = "Nei", Width = 80 };
-                
+
                 MessageBoxResult result = MessageBoxResult.No;
-                yesButton.Click += (s, e) => { result = MessageBoxResult.Yes; dialog.Close(true); };
-                noButton.Click += (s, e) => { result = MessageBoxResult.No; dialog.Close(false); };
-                
-                buttonPanel.Children.Add(yesButton);
-                buttonPanel.Children.Add(noButton);
-                panel.Children.Add(buttonPanel);
-                dialog.Content = panel;
-                
-                await dialog.ShowDialog<bool>(this);
+                yesButton.Click += (s, e) => { result = MessageBoxResult.Yes; dialog.Close(); };
+                noButton.Click += (s, e) => { result = MessageBoxResult.No; dialog.Close(); };
+
+                buttonPanel.Children.Add(yesButton); buttonPanel.Children.Add(noButton);
+                panel.Children.Add(buttonPanel); dialog.Content = panel;
+                await dialog.ShowDialog(this);
                 return result;
             }
             else
             {
-                // Simple OK dialog
                 var dialog = new Window
                 {
                     Title = title,
@@ -333,25 +325,12 @@ namespace NRKLastNed.Mac.Views
                     ShowInTaskbar = false,
                     CanResize = false
                 };
-                
                 await dialog.ShowDialog(this);
                 return MessageBoxResult.OK;
             }
         }
     }
 
-    public enum MessageBoxType
-    {
-        Information,
-        Question,
-        Error
-    }
-
-    public enum MessageBoxResult
-    {
-        Yes,
-        No,
-        OK,
-        Cancel
-    }
+    public enum MessageBoxType { Information, Question, Error }
+    public enum MessageBoxResult { Yes, No, OK, Cancel }
 }

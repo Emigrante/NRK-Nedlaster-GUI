@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:NRKLastNed.Mac.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:NRKLastNed.Mac.ViewModels"
@@ -8,6 +9,11 @@
         x:Class="NRKLastNed.Mac.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="NRK Nedlaster GUI" Height="600" Width="1050"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+        x:Class="NRKLastNed.Mac.Views.MainWindow"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="NRK Last Ned"
+        Height="500" Width="800"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}">
@@ -139,4 +145,55 @@
                    FontSize="16" Padding="30,10"/>
         </Grid>
     </Grid>
+</Window>
+	<Design.DataContext>
+		<vm:MainViewModel/>
+	</Design.DataContext>
+
+	<Grid RowDefinitions="Auto, *, Auto" Margin="10">
+
+		<Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,10">
+			<StackPanel Grid.Column="0" Spacing="5">
+				<TextBlock Text="Lim inn URL fra NRK TV eller Radio:" FontWeight="Bold"/>
+				<Grid ColumnDefinitions="*, Auto">
+					<TextBox Text="{Binding InputUrl}" Watermark="https://tv.nrk.no/..." Margin="0,0,10,0"/>
+					<Button Grid.Column="1" Command="{Binding AnalyzeCommand}" Content="Hent info"
+                            Background="{DynamicResource AccentDark}" Foreground="White"/>
+				</Grid>
+			</StackPanel>
+
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Bottom" Margin="20,0,0,0">
+				<Button Content="Innstillinger" Click="OpenSettings_Click"/>
+				<Button Content="Om" Click="OpenAbout_Click"/>
+			</StackPanel>
+		</Grid>
+
+		<DataGrid Grid.Row="1" ItemsSource="{Binding DownloadItems}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  GridLinesVisibility="All"
+                  BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
+                  SelectedItem="{Binding SelectedGridItem}">
+
+			<DataGrid.Columns>
+				<DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="2*"/>
+				<DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="1.5*"/>
+				<DataGridTextColumn Header="Filnavn" Binding="{Binding FileName}" Width="2*"/>
+				<DataGridTextColumn Header="Fremdrift" Binding="{Binding Progress}" Width="0.8*"/>
+				<DataGridTextColumn Header="Hastighet" Binding="{Binding Speed}" Width="0.8*"/>
+			</DataGrid.Columns>
+		</DataGrid>
+
+		<Grid Grid.Row="2" ColumnDefinitions="Auto, *, Auto" Margin="0,10,0,0">
+			<TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                       Foreground="{DynamicResource AccentColor}" FontWeight="Bold"/>
+
+			<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+				<Button Command="{Binding DownloadCommand}" Content="Last ned valgte"
+                        Background="{DynamicResource AccentColor}" Foreground="Black" FontWeight="Bold"/>
+				<Button Command="{Binding CancelCommand}" Content="Avbryt"/>
+			</StackPanel>
+		</Grid>
+	</Grid>
+
 </Window>
