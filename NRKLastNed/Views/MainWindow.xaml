@@ -136,7 +136,7 @@
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextMuted}"/>
                 <TextBlock Text="{Binding BatchStatusMessage}" Foreground="{DynamicResource AccentColor}" FontSize="11" Margin="0,2,0,0"/>
-                <ProgressBar Value="{Binding TotalProgress}" Height="5" Margin="0,5,10,0" Background="#333" BorderThickness="0" Foreground="{DynamicResource AccentColor}"/>
+                <ProgressBar Value="{Binding TotalProgress}" IsIndeterminate="{Binding IsProgressIndeterminate}" Height="5" Margin="0,5,10,0" Background="#333" BorderThickness="0" Foreground="{DynamicResource AccentColor}"/>
             </StackPanel>
 
             <Button Grid.Column="1" Content="{Binding StartButtonText}" Command="{Binding DownloadCommand}" FontSize="16" Padding="30,10">

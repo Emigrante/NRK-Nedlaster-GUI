@@ -14,6 +14,17 @@ namespace NRKLastNed.Mac.Services
 {
     public class YtDlpService
     {
+        public class AnalysisProgressInfo
+        {
+            public string? StatusMessage { get; set; }
+            public string? DetailMessage { get; set; }
+            public int ProcessedCount { get; set; }
+            public int? TotalCount { get; set; }
+            public double ProgressPercent { get; set; }
+            public bool IsIndeterminate { get; set; }
+            public DownloadItem? Item { get; set; }
+        }
+
         private readonly AppSettings _settings;
         private readonly string _toolsPath;
         private readonly string _ytDlpPath;
@@ -50,70 +61,138 @@ namespace NRKLastNed.Mac.Services
             return true;
         }
 
-        public async Task<List<DownloadItem>> AnalyzeUrlAsync(string url)
+        public async Task<List<DownloadItem>> AnalyzeUrlAsync(string url, IProgress<AnalysisProgressInfo>? progress = null)
         {
             LogService.Log($"Starter analyse av URL: {url}", LogLevel.Debug, _settings);
 
             var items = new List<DownloadItem>();
 
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = _ytDlpPath,
-                Arguments = $"-J \"{url}\"",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                StandardOutputEncoding = System.Text.Encoding.UTF8
-            };
-
             try
             {
-                using (var process = Process.Start(startInfo))
+                progress?.Report(new AnalysisProgressInfo
                 {
-                    var outputTask = process.StandardOutput.ReadToEndAsync();
-                    var errorTask = process.StandardError.ReadToEndAsync();
+                    StatusMessage = "Analyserer URL...",
+                    DetailMessage = "Henter oversikt over innhold...",
+                    IsIndeterminate = true,
+                    ProgressPercent = 0,
+                });
 
-                    await Task.WhenAll(outputTask, errorTask);
-                    await process.WaitForExitAsync();
+                int? totalCount = await DiscoverAnalysisTotalCountAsync(url);
 
-                    var output = outputTask.Result;
-                    var error = errorTask.Result;
+                progress?.Report(CreateAnalysisProgressUpdate(
+                    processedCount: 0,
+                    totalCount: totalCount,
+                    skippedCount: 0,
+                    item: null));
 
-                    if (process.ExitCode != 0)
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = _ytDlpPath,
+                    Arguments = $"--ignore-errors -j \"{url}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    StandardOutputEncoding = System.Text.Encoding.UTF8
+                };
+
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    LogService.Log("Kunne ikke starte yt-dlp for analyse.", LogLevel.Error, _settings);
+                    return items;
+                }
+
+                var errorLines = new List<string>();
+                int successCount = 0;
+                int skippedCount = 0;
+
+                var readOutputTask = Task.Run(async () =>
+                {
+                    string? line;
+                    while ((line = await process.StandardOutput.ReadLineAsync()) != null)
                     {
-                        LogService.Log($"Analyse feilet (ExitCode {process.ExitCode}): {error}", LogLevel.Error, _settings);
-                        return items;
-                    }
-
-                    LogService.Log("JSON hentet. Parser...", LogLevel.Debug, _settings);
-
-                    using (JsonDocument doc = JsonDocument.Parse(output))
-                    {
-                        var root = doc.RootElement;
-
-                        if (root.TryGetProperty("_type", out var type) && type.GetString() == "playlist")
+                        if (string.IsNullOrWhiteSpace(line))
                         {
-                            if (root.TryGetProperty("entries", out var entries))
-                            {
-                                foreach (var entry in entries.EnumerateArray())
-                                {
-                                    var item = ParseJsonEntry(entry, url);
-                                    var resolutions = ExtractResolutionsFromJson(entry);
-                                    ApplyResolutions(item, resolutions);
-                                    items.Add(item);
-                                }
-                            }
+                            continue;
                         }
-                        else
+
+                        try
                         {
+                            using JsonDocument doc = JsonDocument.Parse(line);
+                            var root = doc.RootElement;
+                            if (root.ValueKind != JsonValueKind.Object)
+                            {
+                                continue;
+                            }
+
                             var item = ParseJsonEntry(root, url);
                             var resolutions = ExtractResolutionsFromJson(root);
                             ApplyResolutions(item, resolutions);
                             items.Add(item);
+
+                            int currentSuccessCount = Interlocked.Increment(ref successCount);
+                            progress?.Report(CreateAnalysisProgressUpdate(
+                                processedCount: currentSuccessCount + Volatile.Read(ref skippedCount),
+                                totalCount: totalCount,
+                                skippedCount: Volatile.Read(ref skippedCount),
+                                item: item));
+                        }
+                        catch (JsonException ex)
+                        {
+                            LogService.Log($"Ugyldig analyse-JSON fra yt-dlp: {ex.Message}", LogLevel.Debug, _settings);
                         }
                     }
+                });
+
+                var readErrorTask = Task.Run(async () =>
+                {
+                    string? line;
+                    while ((line = await process.StandardError.ReadLineAsync()) != null)
+                    {
+                        if (string.IsNullOrWhiteSpace(line))
+                        {
+                            continue;
+                        }
+
+                        errorLines.Add(line);
+                        if (line.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            int currentSkippedCount = Interlocked.Increment(ref skippedCount);
+                            progress?.Report(CreateAnalysisProgressUpdate(
+                                processedCount: Volatile.Read(ref successCount) + currentSkippedCount,
+                                totalCount: totalCount,
+                                skippedCount: currentSkippedCount,
+                                item: null));
+                        }
+                    }
+                });
+
+                await Task.WhenAll(readOutputTask, readErrorTask);
+                await process.WaitForExitAsync();
+
+                if (process.ExitCode != 0 && items.Count == 0)
+                {
+                    LogService.Log($"Analyse feilet (ExitCode {process.ExitCode}): {string.Join(Environment.NewLine, errorLines)}", LogLevel.Error, _settings);
+                    return items;
                 }
+
+                if (process.ExitCode != 0)
+                {
+                    LogService.Log($"Analyse fullført med delvise feil (ExitCode {process.ExitCode}): {string.Join(Environment.NewLine, errorLines)}", LogLevel.Info, _settings);
+                }
+
+                progress?.Report(new AnalysisProgressInfo
+                {
+                    StatusMessage = "Analyserer URL...",
+                    DetailMessage = skippedCount > 0
+                        ? $"Analyse ferdig. Hopper over {skippedCount} utilgjengelige videoer."
+                        : "Analyse ferdig.",
+                    ProcessedCount = totalCount ?? successCount + skippedCount,
+                    TotalCount = totalCount,
+                    ProgressPercent = totalCount.GetValueOrDefault() > 0 ? 100 : 0,
+                    IsIndeterminate = !totalCount.HasValue,
+                });
             }
             catch (Exception ex)
             {
@@ -124,6 +203,95 @@ namespace NRKLastNed.Mac.Services
 
             LogService.Log($"Analyse ferdig. Fant {items.Count} elementer.", LogLevel.Info, _settings);
             return items;
+        }
+
+        private async Task<int?> DiscoverAnalysisTotalCountAsync(string url)
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = _ytDlpPath,
+                Arguments = $"--flat-playlist --dump-single-json \"{url}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8
+            };
+
+            try
+            {
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    return null;
+                }
+
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+
+                await Task.WhenAll(outputTask, errorTask);
+                await process.WaitForExitAsync();
+
+                var output = outputTask.Result;
+                if (string.IsNullOrWhiteSpace(output))
+                {
+                    return null;
+                }
+
+                using JsonDocument doc = JsonDocument.Parse(output);
+                var root = doc.RootElement;
+
+                if (root.TryGetProperty("playlist_count", out var playlistCount)
+                    && playlistCount.ValueKind == JsonValueKind.Number
+                    && playlistCount.TryGetInt32(out int total))
+                {
+                    return total;
+                }
+
+                if (root.TryGetProperty("entries", out var entries) && entries.ValueKind == JsonValueKind.Array)
+                {
+                    return entries.GetArrayLength();
+                }
+
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                LogService.Log($"Kunne ikke hente analysetotal: {ex.Message}", LogLevel.Debug, _settings);
+                return null;
+            }
+        }
+
+        private AnalysisProgressInfo CreateAnalysisProgressUpdate(int processedCount, int? totalCount, int skippedCount, DownloadItem? item)
+        {
+            string detailMessage;
+            bool isIndeterminate = !totalCount.HasValue || totalCount <= 0;
+            double progressPercent = 0;
+
+            if (isIndeterminate)
+            {
+                detailMessage = processedCount > 0
+                    ? $"Analysert {processedCount} videoer..."
+                    : "Analyserer videoinfo...";
+            }
+            else
+            {
+                progressPercent = Math.Min(100, processedCount * 100.0 / totalCount.Value);
+                detailMessage = skippedCount > 0
+                    ? $"Analyserer {processedCount} av {totalCount} (hopper over {skippedCount})"
+                    : $"Analyserer {processedCount} av {totalCount}";
+            }
+
+            return new AnalysisProgressInfo
+            {
+                StatusMessage = "Analyserer URL...",
+                DetailMessage = detailMessage,
+                ProcessedCount = processedCount,
+                TotalCount = totalCount,
+                ProgressPercent = progressPercent,
+                IsIndeterminate = isIndeterminate,
+                Item = item
+            };
         }
 
         private List<string> ExtractResolutionsFromJson(JsonElement element)

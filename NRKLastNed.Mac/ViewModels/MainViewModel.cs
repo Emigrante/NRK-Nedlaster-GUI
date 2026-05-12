@@ -24,9 +24,11 @@ namespace NRKLastNed.Mac.ViewModels
         private string _statusMessage;
         private string _batchStatusMessage;
         private double _totalProgress;
+        private bool _isProgressIndeterminate;
         private DownloadItem _selectedGridItem;
 
         private bool _isDownloading;
+        private bool _isAnalyzing;
         private CancellationTokenSource _cts;
         private string _startButtonText = "START NEDLASTING";
 
@@ -39,8 +41,8 @@ namespace NRKLastNed.Mac.ViewModels
 
             DownloadItems = new ObservableCollection<DownloadItem>();
 
-            AddCommand = new RelayCommand(async (o) => await AddAndAnalyzeAsync());
-            DownloadCommand = new RelayCommand(async (o) => await ToggleDownloadAsync());
+            AddCommand = new RelayCommand(async (o) => await AddAndAnalyzeAsync(), (o) => !IsDownloading && !IsAnalyzing);
+            DownloadCommand = new RelayCommand(async (o) => await ToggleDownloadAsync(), (o) => !IsAnalyzing);
             RemoveItemCommand = new RelayCommand((o) => RemoveItem(), (o) => SelectedGridItem != null && !IsDownloading);
             RemoveFinishedCommand = new RelayCommand((o) => RemoveFinishedItems(), (o) => !IsDownloading);
             OpenFolderCommand = new RelayCommand((o) => OpenDownloadFolder());
@@ -64,6 +66,18 @@ namespace NRKLastNed.Mac.ViewModels
                 _isDownloading = value;
                 OnPropertyChanged();
                 StartButtonText = _isDownloading ? "AVBRYT" : "START NEDLASTING";
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        public bool IsAnalyzing
+        {
+            get => _isAnalyzing;
+            set
+            {
+                _isAnalyzing = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
@@ -107,6 +121,12 @@ namespace NRKLastNed.Mac.ViewModels
         {
             get => _totalProgress;
             set { _totalProgress = value; OnPropertyChanged(); }
+        }
+
+        public bool IsProgressIndeterminate
+        {
+            get => _isProgressIndeterminate;
+            set { _isProgressIndeterminate = value; OnPropertyChanged(); }
         }
 
         public RelayCommand AddCommand { get; }
@@ -163,6 +183,7 @@ namespace NRKLastNed.Mac.ViewModels
         private async Task AddAndAnalyzeAsync()
         {
             if (string.IsNullOrWhiteSpace(InputUrl)) return;
+            if (IsAnalyzing) return;
             if (IsDownloading)
             {
                 ShowMessageBox("Kan ikke legge til mens nedlasting pågår.");
@@ -181,11 +202,54 @@ namespace NRKLastNed.Mac.ViewModels
             }
 
             StatusMessage = "Analyserer URL...";
-            var items = await _service.AnalyzeUrlAsync(urlToProcess);
+            BatchStatusMessage = "Henter oversikt over innhold...";
+            TotalProgress = 0;
+            IsProgressIndeterminate = true;
+            IsAnalyzing = true;
 
-            if (items.Count == 0) { StatusMessage = "Fant ingen videoer på URL."; return; }
-            foreach (var item in items) DownloadItems.Add(item);
-            StatusMessage = $"La til {items.Count} videoer.";
+            try
+            {
+                var analysisProgress = new Progress<YtDlpService.AnalysisProgressInfo>(update =>
+                {
+                    if (!string.IsNullOrWhiteSpace(update.StatusMessage))
+                    {
+                        StatusMessage = update.StatusMessage;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(update.DetailMessage))
+                    {
+                        BatchStatusMessage = update.DetailMessage;
+                    }
+
+                    IsProgressIndeterminate = update.IsIndeterminate;
+                    TotalProgress = update.IsIndeterminate ? 0 : update.ProgressPercent;
+
+                    if (update.Item != null)
+                    {
+                        DownloadItems.Add(update.Item);
+                    }
+                });
+
+                var items = await _service.AnalyzeUrlAsync(urlToProcess, analysisProgress);
+
+                if (items.Count == 0)
+                {
+                    StatusMessage = "Fant ingen videoer på URL.";
+                    BatchStatusMessage = "";
+                    TotalProgress = 0;
+                    IsProgressIndeterminate = false;
+                    return;
+                }
+
+                StatusMessage = $"La til {items.Count} videoer.";
+                BatchStatusMessage = $"Analyse ferdig. Fant {items.Count} videoer.";
+                TotalProgress = 100;
+                IsProgressIndeterminate = false;
+            }
+            finally
+            {
+                IsAnalyzing = false;
+            }
         }
 
         private async Task ToggleDownloadAsync()
@@ -212,6 +276,7 @@ namespace NRKLastNed.Mac.ViewModels
             IsDownloading = true;
             _cts = new CancellationTokenSource();
             var token = _cts.Token;
+            IsProgressIndeterminate = false;
 
             StatusMessage = "Starter nedlasting...";
             BatchStatusMessage = $"Laster ned fil 1 av {totalCount} (Total: 0%)";
