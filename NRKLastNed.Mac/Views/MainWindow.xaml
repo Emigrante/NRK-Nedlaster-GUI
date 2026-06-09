@@ -23,7 +23,7 @@
 				<TextBlock Text="Lim inn URL fra NRK TV eller Radio:" FontWeight="Bold"/>
 				<Grid ColumnDefinitions="*, Auto">
 					<TextBox Text="{Binding InputUrl}" Watermark="https://tv.nrk.no/..." Margin="0,0,10,0"/>
-					<Button Grid.Column="1" Command="{Binding AnalyzeCommand}" Content="Hent info"
+					<Button Grid.Column="1" Command="{Binding AddCommand}" Content="Hent info"
                             Background="{DynamicResource AccentDark}" Foreground="White"/>
 				</Grid>
 			</StackPanel>
@@ -50,14 +50,16 @@
 			</DataGrid.Columns>
 		</DataGrid>
 
-		<Grid Grid.Row="2" ColumnDefinitions="Auto, *, Auto" Margin="0,10,0,0">
-			<TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center"
-                       Foreground="{DynamicResource AccentColor}" FontWeight="Bold"/>
+		<Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="0,10,0,0">
+			<StackPanel Spacing="4" VerticalAlignment="Center">
+				<TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource AccentColor}" FontWeight="Bold"/>
+				<TextBlock Text="{Binding BatchStatusMessage}" Foreground="{DynamicResource TextColor}" FontSize="11"/>
+				<ProgressBar Value="{Binding TotalProgress}" IsIndeterminate="{Binding IsProgressIndeterminate}" Height="6"/>
+			</StackPanel>
 
-			<StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
-				<Button Command="{Binding DownloadCommand}" Content="Last ned valgte"
+			<StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+				<Button Command="{Binding DownloadCommand}" Content="{Binding StartButtonText}"
                         Background="{DynamicResource AccentColor}" Foreground="Black" FontWeight="Bold"/>
-				<Button Command="{Binding CancelCommand}" Content="Avbryt"/>
 			</StackPanel>
 		</Grid>
 	</Grid>
