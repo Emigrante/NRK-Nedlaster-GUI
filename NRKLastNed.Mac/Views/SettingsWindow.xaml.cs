@@ -2,6 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using NRKLastNed.Mac.Models;
 using NRKLastNed.Mac.Services;
@@ -23,9 +25,42 @@ namespace NRKLastNed.Mac.Views
         private UpdateService.ToolUpdateInfo? _pendingYtDlpUpdate;
         private FfmpegUpdateService.FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
+        // Named controls
+        private TextBox txtOutput = null!;
+        private TextBox txtTemp = null!;
+        private CheckBox chkUseSystemTemp = null!;
+        private Grid pnlCustomTemp = null!;
+        private ComboBox cmbResolution = null!;
+        private ComboBox cmbTheme = null!;
+        private ComboBox cmbLogLevel = null!;
+        private CheckBox chkEnableLog = null!;
+        private TextBlock lblAppVersion = null!;
+        private Button btnAppUpdate = null!;
+        private TextBlock lblYtDlpVersion = null!;
+        private Button btnYtDlpUpdate = null!;
+        private TextBlock lblFfmpegVersion = null!;
+        private Button btnFfmpegUpdate = null!;
+
         public SettingsWindow()
         {
-            InitializeComponent();
+            AvaloniaXamlLoader.Load(this);
+            
+            // Find named controls
+            txtOutput = this.FindControl<TextBox>("txtOutput")!;
+            txtTemp = this.FindControl<TextBox>("txtTemp")!;
+            chkUseSystemTemp = this.FindControl<CheckBox>("chkUseSystemTemp")!;
+            pnlCustomTemp = this.FindControl<Grid>("pnlCustomTemp")!;
+            cmbResolution = this.FindControl<ComboBox>("cmbResolution")!;
+            cmbTheme = this.FindControl<ComboBox>("cmbTheme")!;
+            cmbLogLevel = this.FindControl<ComboBox>("cmbLogLevel")!;
+            chkEnableLog = this.FindControl<CheckBox>("chkEnableLog")!;
+            lblAppVersion = this.FindControl<TextBlock>("lblAppVersion")!;
+            btnAppUpdate = this.FindControl<Button>("btnAppUpdate")!;
+            lblYtDlpVersion = this.FindControl<TextBlock>("lblYtDlpVersion")!;
+            btnYtDlpUpdate = this.FindControl<Button>("btnYtDlpUpdate")!;
+            lblFfmpegVersion = this.FindControl<TextBlock>("lblFfmpegVersion")!;
+            btnFfmpegUpdate = this.FindControl<Button>("btnFfmpegUpdate")!;
+            
             _settings = AppSettings.Load();
             _toolUpdateService = new UpdateService();
             _appUpdateService = new AppUpdateService();

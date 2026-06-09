@@ -4,6 +4,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
         x:Class="NRKLastNed.Mac.Views.AboutWindow"
+        Title="Om NRK Nedlaster GUI" Height="350" Width="500"
+        CanResize="False" WindowStartupLocation="CenterOwner"
         Title="Om NRK Last Ned"
         Width="400" Height="250"
         WindowStartupLocation="CenterOwner"

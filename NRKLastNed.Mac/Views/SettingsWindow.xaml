@@ -9,6 +9,44 @@
         CanResize="False"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BgDark}"
+        Foreground="{DynamicResource TextColor}"
+        WindowStartupLocation="CenterScreen"
+        CanResize="True">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Text="INNSTILLINGER" FontSize="20" FontWeight="Bold" 
+                      Foreground="{DynamicResource AccentColor}" Margin="0,0,0,20"/>
+
+            <TextBlock Grid.Row="1" Text="Nedlastningsmappe:" Margin="0,0,0,5"/>
+            <Grid Grid.Row="2" Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="txtOutput" IsReadOnly="True"/>
+                <Button Grid.Column="1" Content="..." Click="BrowseOutput_Click" Margin="10,0,0,0" Width="40"/>
+            </Grid>
+
+            <Border Grid.Row="3" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" 
+                   CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Midlertidige filer" Foreground="{DynamicResource AccentColor}" 
+                              FontWeight="Bold" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="chkUseSystemTemp" Content="Bruk standard macOS temp mappe" 
+                              Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" 
         Foreground="{DynamicResource TextColor}">
 
 	<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

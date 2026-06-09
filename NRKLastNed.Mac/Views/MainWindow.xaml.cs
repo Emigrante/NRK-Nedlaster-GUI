@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Markup.Xaml;
 using NRKLastNed.Mac.ViewModels;
 
 namespace NRKLastNed.Mac.Views
@@ -10,7 +11,7 @@ namespace NRKLastNed.Mac.Views
 
         public MainWindow()
         {
-            InitializeComponent();
+            AvaloniaXamlLoader.Load(this);
             _vm = new MainViewModel();
             DataContext = _vm;
         }
@@ -18,7 +19,7 @@ namespace NRKLastNed.Mac.Views
         private async void OpenSettings_Click(object sender, RoutedEventArgs e)
         {
             var settingsWindow = new SettingsWindow();
-            // Vi bruker ShowDialog med 'this' som parameter for å sette eier
+            // Vi bruker ShowDialog med 'this' som parameter for Ã¥ sette eier
             var result = await settingsWindow.ShowDialog<bool?>(this);
             if (result == true)
             {
