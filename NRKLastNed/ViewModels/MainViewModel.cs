@@ -29,6 +29,10 @@ namespace NRKLastNed.ViewModels
         private CancellationTokenSource _cts;
         private string _startButtonText = "START NEDLASTING";
 
+        // NYTT: TV/Radio valg
+        private bool _isTelevision = true;  // TV er default
+        private bool _isRadio = false;
+
         // NYTT FELT: For varsling om oppdatering
         private string _updateNotificationText;
 
@@ -61,6 +65,31 @@ namespace NRKLastNed.ViewModels
 
             // NYTT KALL: Sjekk etter oppdatering i bakgrunnen ved start
             _ = CheckAppUpdateSilentAsync();
+        }
+
+        // NY PROPERTY: TV/Radio valg
+        public bool IsTelevision
+        {
+            get => _isTelevision;
+            set
+            {
+                _isTelevision = value;
+                if (value) IsRadio = false;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsRadio));
+            }
+        }
+
+        public bool IsRadio
+        {
+            get => _isRadio;
+            set
+            {
+                _isRadio = value;
+                if (value) IsTelevision = false;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsTelevision));
+            }
         }
 
         // NY PROPERTY: Tekst som vises i GUI hvis ny versjon finnes

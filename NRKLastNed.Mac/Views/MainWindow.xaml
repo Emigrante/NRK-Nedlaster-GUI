@@ -4,8 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:models="clr-namespace:NRKLastNed.Mac.Models"
+        xmlns:converters="using:NRKLastNed.Mac.Converters"
         mc:Ignorable="d" d:DesignWidth="1050" d:DesignHeight="600"
-        x:Class="NRKLastNed.Mac.Views.MainWindow"
+        x:Class="NRKLastNed.Mac.Views.MainWindow" x:Name="mainWindow"
         x:DataType="vm:MainViewModel"
         Title="NRK Nedlaster GUI" Height="600" Width="1050"
         WindowStartupLocation="CenterScreen"
@@ -15,6 +16,11 @@
     <Design.DataContext>
         <vm:MainViewModel/>
     </Design.DataContext>
+
+    <Window.Resources>
+        <!-- Converter for å skjule RadioButton-valg når Radio er valgt -->
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -39,6 +45,7 @@
             <Button Content="Om" Click="OpenAbout_Click"/>
         </StackPanel>
 
+        <!-- URL-input -->
         <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="10" Padding="15" Margin="0,0,0,20">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -83,8 +90,8 @@
                     <TextBlock Grid.Column="0" Text="#" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"/>
                     <TextBlock Grid.Column="1" Text="S/Ep" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
                     <TextBlock Grid.Column="2" Text="Tittel" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
-                    <TextBlock Grid.Column="3" Text="Oppløsning" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
-                    <TextBlock Grid.Column="4" Text="Språk" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="3" Text="Oppløsning" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Grid.Column="4" Text="Språk" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}"/>
                     <TextBlock Grid.Column="5" Text="Status" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
                     <TextBlock Grid.Column="6" Text="Fremdrift" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
                 </Grid>
@@ -107,8 +114,8 @@
                                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{Binding SeasonEpisode}" VerticalAlignment="Center" Margin="5,0"/>
                                     <TextBlock Grid.Column="2" Text="{Binding Title}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
-                                    <ComboBox Grid.Column="3" ItemsSource="{Binding AvailableResolutions}" SelectedItem="{Binding SelectedResolution}" VerticalAlignment="Center" Margin="2"/>
-                                    <ComboBox Grid.Column="4" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" VerticalAlignment="Center" Margin="2"/>
+                                    <ComboBox Grid.Column="3" ItemsSource="{Binding AvailableResolutions}" SelectedItem="{Binding SelectedResolution}" VerticalAlignment="Center" Margin="2" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding IsTelevision}"/>
+                                    <ComboBox Grid.Column="4" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" VerticalAlignment="Center" Margin="2" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding IsTelevision}"/>
                                     <TextBlock Grid.Column="5" Text="{Binding Status}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
                                     <ProgressBar Grid.Column="6" Value="{Binding Progress}" Maximum="100" Height="15" VerticalAlignment="Center" Margin="5,0"
                                                 Foreground="{DynamicResource AccentColor}" Background="#444"/>
@@ -140,3 +147,15 @@
         </Grid>
 	</Grid>
 </Window>
+
+
+
+
+
+
+
+
+
+
+
+

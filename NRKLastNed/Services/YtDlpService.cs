@@ -63,7 +63,10 @@ namespace NRKLastNed.Services
 
         public async Task<List<DownloadItem>> AnalyzeUrlAsync(string url, IProgress<AnalysisProgressInfo>? progress = null)
         {
-            LogService.Log($"Starter analyse av URL: {url}", LogLevel.Debug, _settings);
+            // Automatisk deteksjon av TV vs Radio basert på URL
+            bool isTelevision = DetectIsTelevisionFromUrl(url);
+
+            LogService.Log($"Starter analyse av URL: {url} ({(isTelevision ? "TV" : "Radio")})", LogLevel.Debug, _settings);
 
             var items = new List<DownloadItem>();
 
@@ -126,9 +129,13 @@ namespace NRKLastNed.Services
                                 continue;
                             }
 
-                            var item = ParseJsonEntry(root, url);
-                            var resolutions = ExtractResolutionsFromJson(root);
-                            ApplyResolutions(item, resolutions);
+                            var item = ParseJsonEntry(root, url, isTelevision);
+                            // Only extract and apply resolutions for TV items
+                            if (item.IsTelevision)
+                            {
+                                var resolutions = ExtractResolutionsFromJson(root);
+                                ApplyResolutions(item, resolutions);
+                            }
                             items.Add(item);
 
                             int currentSuccessCount = Interlocked.Increment(ref successCount);
@@ -335,7 +342,7 @@ namespace NRKLastNed.Services
                 item.SelectedResolution = "best";
         }
 
-        private DownloadItem ParseJsonEntry(JsonElement element, string originalUrl)
+        private DownloadItem ParseJsonEntry(JsonElement element, string originalUrl, bool isTelevision)
         {
             string title = element.TryGetProperty("title", out var t) ? t.GetString() : "Ukjent";
             string url = element.TryGetProperty("webpage_url", out var u) ? u.GetString() : originalUrl;
@@ -366,7 +373,23 @@ namespace NRKLastNed.Services
                 displayTitle = cleanTitle;
             }
 
-            return new DownloadItem { Url = url, Title = displayTitle, SeasonEpisode = seInfo, Status = "Klar", Progress = 0 };
+            return new DownloadItem { Url = url, Title = displayTitle, SeasonEpisode = seInfo, Status = "Klar", Progress = 0, IsTelevision = isTelevision };
+        }
+
+        /// <summary>
+        /// Detekterer automatisk om URL er fra TV eller Radio basert på domenet
+        /// </summary>
+        private bool DetectIsTelevisionFromUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return true; // Default til TV hvis URL er tom
+
+            // Sjekk om URL inneholder radio.nrk
+            if (url.Contains("radio.nrk", StringComparison.OrdinalIgnoreCase))
+                return false; // Radio
+
+            // Ellers antas det å være TV
+            return true; // TV
         }
 
         private string GetLanguageCode(string languageName)
@@ -383,17 +406,28 @@ namespace NRKLastNed.Services
 
         public async Task DownloadItemAsync(DownloadItem item, IProgress<string> progressText, IProgress<double> progressPercent, CancellationToken token)
         {
+            // Velg riktig output-mappe basert på TV/Radio
+            string outputFolder = item.IsTelevision ? _settings.TvOutputFolder : _settings.RadioOutputFolder;
+
+            // Hvis samme mappe brukes for begge, eller hvis spesifikk mappe ikke er satt, bruk TV-mappen
+            if (_settings.UseSameFolderForBoth || string.IsNullOrEmpty(outputFolder))
+            {
+                outputFolder = _settings.TvOutputFolder;
+            }
+
             string tempPath = _settings.UseSystemTemp ? Path.Combine(Path.GetTempPath(), "NRKDownload") : _settings.TempFolder;
             if (string.IsNullOrEmpty(tempPath)) tempPath = Path.Combine(Path.GetTempPath(), "NRKDownload");
 
             if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
-            if (!Directory.Exists(_settings.OutputFolder)) Directory.CreateDirectory(_settings.OutputFolder);
+            if (!Directory.Exists(outputFolder)) Directory.CreateDirectory(outputFolder);
 
             // ENDRET: Bruker Title direkte siden den nå allerede inneholder SxxExx på riktig plass
             string fileNameBase = item.Title;
 
-            string resTag = item.SelectedResolution == "best" ? "" : $" - {item.SelectedResolution}p";
-            string finalFileName = SanitizeFileName($"{fileNameBase}{resTag}.mkv");
+            // Bruk MP3 for Radio, MKV for TV
+            string fileExtension = item.IsTelevision ? "mkv" : "mp3";
+            string resTag = (item.IsTelevision && item.SelectedResolution != "best") ? $" - {item.SelectedResolution}p" : "";
+            string finalFileName = SanitizeFileName($"{fileNameBase}{resTag}.{fileExtension}");
             string fullOutputPath = Path.Combine(tempPath, finalFileName);
             string cleanupBasePattern = SanitizeFileName(fileNameBase);
 
@@ -402,7 +436,17 @@ namespace NRKLastNed.Services
 
             string metadataArgs = $"--postprocessor-args \"FFmpeg:-metadata:s:a:0 language={langCode}\"";
 
-            string args = $"-N 4 -o \"{fullOutputPath}\" --remux-video mkv -S {formatSelector} --embed-subs --embed-thumbnail --no-mtime --convert-subs srt {metadataArgs} --ffmpeg-location \"{_ffmpegPath}\" --progress --newline \"{item.Url}\"";
+            // Para radio, bruk bare audio-download uten video-format arguments
+            string args;
+            if (item.IsTelevision)
+            {
+                args = $"-N 4 -o \"{fullOutputPath}\" --remux-video mkv -S {formatSelector} --embed-subs --embed-thumbnail --no-mtime --convert-subs srt {metadataArgs} --ffmpeg-location \"{_ffmpegPath}\" --progress --newline \"{item.Url}\"";
+            }
+            else
+            {
+                // For radio: nedlast bare best audio
+                args = $"-N 4 -o \"{fullOutputPath}\" -f bestaudio --no-mtime --ffmpeg-location \"{_ffmpegPath}\" --progress --newline \"{item.Url}\"";
+            }
 
             var startInfo = new ProcessStartInfo
             {
@@ -475,7 +519,14 @@ namespace NRKLastNed.Services
 
             if (File.Exists(fullOutputPath))
             {
-                string dest = Path.Combine(_settings.OutputFolder, finalFileName);
+                // Velg riktig output-mappe basert på TV/Radio
+                string selectedOutputFolder = item.IsTelevision ? _settings.TvOutputFolder : _settings.RadioOutputFolder;
+                if (_settings.UseSameFolderForBoth || string.IsNullOrEmpty(selectedOutputFolder))
+                {
+                    selectedOutputFolder = _settings.TvOutputFolder;
+                }
+
+                string dest = Path.Combine(selectedOutputFolder, finalFileName);
                 if (File.Exists(dest)) File.Delete(dest);
 
                 bool moved = false;

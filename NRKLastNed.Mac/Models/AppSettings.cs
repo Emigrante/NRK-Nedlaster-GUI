@@ -7,7 +7,20 @@ namespace NRKLastNed.Mac.Models
 {
     public class AppSettings
     {
-        public string OutputFolder { get; set; } = "";
+        // TV og Radio nedlastingsmapper
+        public string TvOutputFolder { get; set; } = "";
+        public string RadioOutputFolder { get; set; } = "";
+
+        // Alternativ: Bruk samme mappe for både TV og Radio
+        public bool UseSameFolderForBoth { get; set; } = false;
+
+        // Legacy - for bakoverkompatibilitet
+        public string OutputFolder 
+        { 
+            get => UseSameFolderForBoth ? TvOutputFolder : TvOutputFolder;
+            set => TvOutputFolder = value;
+        }
+
         public string TempFolder { get; set; } = "";
         public bool UseSystemTemp { get; set; } = true;
 

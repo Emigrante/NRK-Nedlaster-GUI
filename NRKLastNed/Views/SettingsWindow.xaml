@@ -24,17 +24,39 @@
 
             <TextBlock Text="INNSTILLINGER" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" Margin="0,0,0,20"/>
 
-            <TextBlock Grid.Row="1" Text="Nedlastningsmappe:" Margin="0,0,0,5"/>
-            <Grid Grid.Row="2" Margin="0,0,0,15">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="txtOutput" IsReadOnly="True"/>
-                <Button Grid.Column="1" Content="..." Click="BrowseOutput_Click" Margin="10,0,0,0" Width="40"/>
-            </Grid>
+            <!-- TV/Radio Nedlastingsmapper -->
+            <GroupBox Grid.Row="1" Header="Nedlastingsmapper" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
+                <StackPanel Margin="10">
+                    <!-- Checkbox for delt mappe -->
+                    <CheckBox x:Name="chkUseSameFolder" Content="Bruk samme mappe for både TV og Radio" 
+                              Foreground="{DynamicResource TextColor}" Margin="0,0,0,15" 
+                              Checked="chkUseSameFolder_Checked" Unchecked="chkUseSameFolder_Unchecked"/>
 
-            <GroupBox Grid.Row="3" Header="Midlertidige filer" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
+                    <!-- TV-mappe -->
+                    <TextBlock Text="TV-mappe:" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtTvOutput" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Content="..." Click="BrowseTvOutput_Click" Margin="10,0,0,0" Width="40"/>
+                    </Grid>
+
+                    <!-- Radio-mappe (kun synlig når ikke delt mappe) -->
+                    <TextBlock Text="Radio-mappe:" Margin="0,0,0,5" x:Name="lblRadioOutput"/>
+                    <Grid Margin="0,0,0,15" x:Name="gridRadioOutput">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="txtRadioOutput" IsReadOnly="True"/>
+                        <Button Grid.Column="1" Content="..." Click="BrowseRadioOutput_Click" Margin="10,0,0,0" Width="40"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Row="2" Header="Midlertidige filer" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
                 <StackPanel Margin="10">
                     <CheckBox x:Name="chkUseSystemTemp" Content="Bruk standard Windows temp mappe" 
                               Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" 
@@ -51,7 +73,7 @@
                 </StackPanel>
             </GroupBox>
 
-            <GroupBox Grid.Row="4" Header="Preferanser" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
+            <GroupBox Grid.Row="3" Header="Preferanser" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
                 <Grid Margin="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -71,7 +93,7 @@
                 </Grid>
             </GroupBox>
 
-            <GroupBox Grid.Row="5" Header="Verktøy og Oppdateringer" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
+            <GroupBox Grid.Row="4" Header="Verktøy og Oppdateringer" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
                 <StackPanel Margin="10">
 
                     <Grid Margin="0,0,0,15">
@@ -114,7 +136,7 @@
                 </StackPanel>
             </GroupBox>
 
-            <GroupBox Grid.Row="6" Header="Logging" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
+            <GroupBox Grid.Row="5" Header="Logging" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
                 <StackPanel Margin="10">
                     <CheckBox x:Name="chkEnableLog" Content="Aktiver Logging til fil" Foreground="{DynamicResource TextColor}" Margin="0,0,0,10"/>
 

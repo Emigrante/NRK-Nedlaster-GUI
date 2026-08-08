@@ -25,31 +25,19 @@ namespace NRKLastNed.Mac.Views
         private UpdateService.ToolUpdateInfo? _pendingYtDlpUpdate;
         private FfmpegUpdateService.FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
-        // Named controls
-        private TextBox txtOutput = null!;
-        private TextBox txtTemp = null!;
-        private CheckBox chkUseSystemTemp = null!;
-        private Grid pnlCustomTemp = null!;
-        private ComboBox cmbResolution = null!;
-        private ComboBox cmbTheme = null!;
-        private ComboBox cmbLogLevel = null!;
-        private CheckBox chkEnableLog = null!;
-        private TextBlock lblAppVersion = null!;
-        private Button btnAppUpdate = null!;
-        private TextBlock lblYtDlpVersion = null!;
-        private Button btnYtDlpUpdate = null!;
-        private TextBlock lblFfmpegVersion = null!;
-        private Button btnFfmpegUpdate = null!;
-
         public SettingsWindow()
         {
             AvaloniaXamlLoader.Load(this);
-            
+
             // Find named controls
-            txtOutput = this.FindControl<TextBox>("txtOutput")!;
-            txtTemp = this.FindControl<TextBox>("txtTemp")!;
-            chkUseSystemTemp = this.FindControl<CheckBox>("chkUseSystemTemp")!;
-            pnlCustomTemp = this.FindControl<Grid>("pnlCustomTemp")!;
+            var txtTvOutput = this.FindControl<TextBox>("txtTvOutput")!;
+            var txtRadioOutput = this.FindControl<TextBox>("txtRadioOutput")!;
+            var chkUseSameFolder = this.FindControl<CheckBox>("chkUseSameFolder")!;
+            var lblRadioOutput = this.FindControl<TextBlock>("lblRadioOutput")!;
+            var gridRadioOutput = this.FindControl<Grid>("gridRadioOutput")!;
+            var txtTemp = this.FindControl<TextBox>("txtTemp")!;
+            var chkUseSystemTemp = this.FindControl<CheckBox>("chkUseSystemTemp")!;
+            var pnlCustomTemp = this.FindControl<Grid>("pnlCustomTemp")!;
             cmbResolution = this.FindControl<ComboBox>("cmbResolution")!;
             cmbTheme = this.FindControl<ComboBox>("cmbTheme")!;
             cmbLogLevel = this.FindControl<ComboBox>("cmbLogLevel")!;
@@ -60,7 +48,7 @@ namespace NRKLastNed.Mac.Views
             btnYtDlpUpdate = this.FindControl<Button>("btnYtDlpUpdate")!;
             lblFfmpegVersion = this.FindControl<TextBlock>("lblFfmpegVersion")!;
             btnFfmpegUpdate = this.FindControl<Button>("btnFfmpegUpdate")!;
-            
+
             _settings = AppSettings.Load();
             _toolUpdateService = new UpdateService();
             _appUpdateService = new AppUpdateService();
@@ -76,7 +64,14 @@ namespace NRKLastNed.Mac.Views
             cmbTheme.ItemsSource = new List<string> { "System", "Light", "Dark" };
             cmbLogLevel.ItemsSource = Enum.GetValues(typeof(LogLevel));
 
-            txtOutput.Text = _settings.OutputFolder;
+            // NY: Initialiser TV/Radio-mapper
+            txtTvOutput.Text = _settings.TvOutputFolder;
+            txtRadioOutput.Text = _settings.RadioOutputFolder;
+            chkUseSameFolder.IsChecked = _settings.UseSameFolderForBoth;
+
+            // Oppdater synlighet av Radio-mappe basert på delt-mappe checkbox
+            UpdateRadioFolderVisibility();
+
             txtTemp.Text = _settings.TempFolder;
             chkUseSystemTemp.IsChecked = _settings.UseSystemTemp;
             pnlCustomTemp.IsEnabled = !_settings.UseSystemTemp;
@@ -86,6 +81,13 @@ namespace NRKLastNed.Mac.Views
 
             chkEnableLog.IsChecked = _settings.EnableLogging;
             cmbLogLevel.SelectedItem = _settings.LogLevel;
+        }
+
+        private void UpdateRadioFolderVisibility()
+        {
+            bool isShared = chkUseSameFolder.IsChecked ?? false;
+            lblRadioOutput.IsVisible = !isShared;
+            gridRadioOutput.IsVisible = !isShared;
         }
 
         private async Task CheckVersionsAsync()
@@ -231,9 +233,58 @@ namespace NRKLastNed.Mac.Views
 
                 if (folders.Count > 0)
                 {
-                    txtOutput.Text = folders[0].Path.LocalPath;
+                    txtTvOutput.Text = folders[0].Path.LocalPath;
                 }
             }
+        }
+
+        // NY: TV-mappe browser
+        private async void BrowseTvOutput_Click(object sender, RoutedEventArgs e)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel != null)
+            {
+                var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = "Velg TV-nedlastningsmappe",
+                    AllowMultiple = false
+                });
+
+                if (folders.Count > 0)
+                {
+                    txtTvOutput.Text = folders[0].Path.LocalPath;
+                }
+            }
+        }
+
+        // NY: Radio-mappe browser
+        private async void BrowseRadioOutput_Click(object sender, RoutedEventArgs e)
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel != null)
+            {
+                var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+                {
+                    Title = "Velg Radio-nedlastningsmappe",
+                    AllowMultiple = false
+                });
+
+                if (folders.Count > 0)
+                {
+                    txtRadioOutput.Text = folders[0].Path.LocalPath;
+                }
+            }
+        }
+
+        // NY: Checkbox for delt mappe
+        private void chkUseSameFolder_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateRadioFolderVisibility();
+        }
+
+        private void chkUseSameFolder_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdateRadioFolderVisibility();
         }
 
         private async void BrowseTemp_Click(object sender, RoutedEventArgs e)
@@ -259,7 +310,14 @@ namespace NRKLastNed.Mac.Views
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            _settings.OutputFolder = txtOutput.Text;
+            // NY: Lagre TV/Radio-mapper
+            _settings.TvOutputFolder = txtTvOutput.Text;
+            _settings.RadioOutputFolder = txtRadioOutput.Text;
+            _settings.UseSameFolderForBoth = chkUseSameFolder.IsChecked == true;
+
+            // Legacy - for bakoverkompatibilitet
+            _settings.OutputFolder = txtTvOutput.Text;
+
             _settings.TempFolder = txtTemp.Text;
             _settings.UseSystemTemp = chkUseSystemTemp.IsChecked == true;
 

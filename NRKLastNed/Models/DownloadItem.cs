@@ -13,11 +13,18 @@ namespace NRKLastNed.Models
         private string _selectedLanguage;
         private ObservableCollection<string> _availableResolutions;
         private ObservableCollection<string> _availableLanguages;
+        private bool _isTelevision;
 
         public string Url { get; set; }
         public string Title { get; set; }
         public string SeasonEpisode { get; set; } // F.eks "S01E01"
         public bool IsSelected { get; set; } = true; // For checkbox i listen
+
+        public bool IsTelevision
+        {
+            get => _isTelevision;
+            set { _isTelevision = value; OnPropertyChanged(); }
+        }
 
         public ObservableCollection<string> AvailableResolutions
         {

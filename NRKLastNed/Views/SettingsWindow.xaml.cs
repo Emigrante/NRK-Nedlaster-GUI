@@ -29,7 +29,7 @@ namespace NRKLastNed.Views
             _appUpdateService = new AppUpdateService();
             _ffmpegUpdateService = new FfmpegUpdateService();
 
-            InitializeUI();
+            this.Loaded += (s, e) => InitializeUI();
 
             _ = CheckVersionsAsync();
         }
@@ -40,7 +40,14 @@ namespace NRKLastNed.Views
             cmbTheme.ItemsSource = new List<string> { "System", "Light", "Dark" };
             cmbLogLevel.ItemsSource = Enum.GetValues(typeof(LogLevel));
 
-            txtOutput.Text = _settings.OutputFolder;
+            // NY: Initialiser TV/Radio-mapper
+            txtTvOutput.Text = _settings.TvOutputFolder;
+            txtRadioOutput.Text = _settings.RadioOutputFolder;
+            chkUseSameFolder.IsChecked = _settings.UseSameFolderForBoth;
+
+            // Oppdater synlighet av Radio-mappe basert på delt-mappe checkbox
+            UpdateRadioFolderVisibility();
+
             txtTemp.Text = _settings.TempFolder;
             chkUseSystemTemp.IsChecked = _settings.UseSystemTemp;
             pnlCustomTemp.IsEnabled = !_settings.UseSystemTemp;
@@ -50,6 +57,13 @@ namespace NRKLastNed.Views
 
             chkEnableLog.IsChecked = _settings.EnableLogging;
             cmbLogLevel.SelectedItem = _settings.LogLevel;
+        }
+
+        private void UpdateRadioFolderVisibility()
+        {
+            bool isShared = chkUseSameFolder.IsChecked ?? false;
+            lblRadioOutput.Visibility = isShared ? Visibility.Collapsed : Visibility.Visible;
+            gridRadioOutput.Visibility = isShared ? Visibility.Collapsed : Visibility.Visible;
         }
 
         private async Task CheckVersionsAsync()
@@ -193,10 +207,29 @@ namespace NRKLastNed.Views
             await CheckVersionsAsync();
         }
 
-        private void BrowseOutput_Click(object sender, RoutedEventArgs e)
+        // NY: TV-mappe browser
+        private void BrowseTvOutput_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFolderDialog();
-            if (dialog.ShowDialog() == true) txtOutput.Text = dialog.FolderName;
+            if (dialog.ShowDialog() == true) txtTvOutput.Text = dialog.FolderName;
+        }
+
+        // NY: Radio-mappe browser
+        private void BrowseRadioOutput_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFolderDialog();
+            if (dialog.ShowDialog() == true) txtRadioOutput.Text = dialog.FolderName;
+        }
+
+        // NY: Checkbox for delt mappe
+        private void chkUseSameFolder_Checked(object sender, RoutedEventArgs e)
+        {
+            UpdateRadioFolderVisibility();
+        }
+
+        private void chkUseSameFolder_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UpdateRadioFolderVisibility();
         }
 
         private void BrowseTemp_Click(object sender, RoutedEventArgs e)
@@ -210,7 +243,14 @@ namespace NRKLastNed.Views
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            _settings.OutputFolder = txtOutput.Text;
+            // NY: Lagre TV/Radio-mapper
+            _settings.TvOutputFolder = txtTvOutput.Text;
+            _settings.RadioOutputFolder = txtRadioOutput.Text;
+            _settings.UseSameFolderForBoth = chkUseSameFolder.IsChecked == true;
+
+            // Legacy - for bakoverkompatibilitet
+            _settings.OutputFolder = txtTvOutput.Text;
+
             _settings.TempFolder = txtTemp.Text;
             _settings.UseSystemTemp = chkUseSystemTemp.IsChecked == true;
 

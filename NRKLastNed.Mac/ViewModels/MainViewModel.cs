@@ -32,6 +32,9 @@ namespace NRKLastNed.Mac.ViewModels
         private CancellationTokenSource _cts;
         private string _startButtonText = "START NEDLASTING";
 
+        private bool _isTelevision = true;
+        private bool _isRadio = false;
+
         private string _updateNotificationText;
 
         // OPTIMALISERING: Profiler viste høy frekvens av PropertyChanged-events for Progress og Status
@@ -97,6 +100,31 @@ namespace NRKLastNed.Mac.ViewModels
         {
             get => _startButtonText;
             set { _startButtonText = value; OnPropertyChanged(); }
+        }
+
+        // NY: TV/Radio valg
+        public bool IsTelevision
+        {
+            get => _isTelevision;
+            set 
+            { 
+                _isTelevision = value;
+                _isRadio = !value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsRadio));
+            }
+        }
+
+        public bool IsRadio
+        {
+            get => _isRadio;
+            set 
+            { 
+                _isRadio = value;
+                _isTelevision = !value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsTelevision));
+            }
         }
 
         public string InputUrl

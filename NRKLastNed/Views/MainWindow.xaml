@@ -10,6 +10,11 @@
         WindowStartupLocation="CenterScreen"
         Icon="/Assets/logo.ico">
 
+    <Window.Resources>
+        <!-- Converter for å skjule RadioButton-valg når Radio er valgt -->
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -36,6 +41,7 @@
             <Button Content="Om" Click="OpenAbout_Click" Style="{StaticResource MenuButtonStyle}"/>
         </StackPanel>
 
+        <!-- URL-input -->
         <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="10" Padding="15" Margin="0,0,0,20">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -59,7 +65,7 @@
             </Grid>
         </Border>
 
-        <DataGrid Grid.Row="2" ItemsSource="{Binding DownloadItems}" 
+        <DataGrid Grid.Row="2" ItemsSource="{Binding DownloadItems}"
                   SelectedItem="{Binding SelectedGridItem}"
                   AutoGenerateColumns="False" Background="{DynamicResource BgLight}" 
                   HeadersVisibility="Column" BorderThickness="0"
@@ -80,20 +86,22 @@
                 <DataGridTextColumn Header="Sesong/Ep" Binding="{Binding SeasonEpisode}" Width="80" IsReadOnly="True"/>
                 <DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="*" IsReadOnly="True"/>
 
-                <DataGridTemplateColumn Header="Oppløsning" Width="120">
+                <DataGridTemplateColumn Header="Oppløsning" Width="120" Visibility="{Binding IsTelevision, Converter={StaticResource BoolToVis}}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ComboBox ItemsSource="{Binding AvailableResolutions}" 
-                                      SelectedItem="{Binding SelectedResolution, UpdateSourceTrigger=PropertyChanged}"/>
+                                      SelectedItem="{Binding SelectedResolution, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEnabled="{Binding IsTelevision}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Lydspråk" Width="120">
+                <DataGridTemplateColumn Header="Lydspråk" Width="120" Visibility="{Binding IsTelevision, Converter={StaticResource BoolToVis}}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <ComboBox ItemsSource="{Binding AvailableLanguages}" 
-                                      SelectedItem="{Binding SelectedLanguage, UpdateSourceTrigger=PropertyChanged}"/>
+                                      SelectedItem="{Binding SelectedLanguage, UpdateSourceTrigger=PropertyChanged}"
+                                      IsEnabled="{Binding IsTelevision}"/>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
