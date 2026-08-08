@@ -1,4 +1,4 @@
-﻿                          NRK NEDLASTER GUI
+                          NRK NEDLASTER GUI
 
 Hei og velkommen til NRK Nedlaster GUI!
 
