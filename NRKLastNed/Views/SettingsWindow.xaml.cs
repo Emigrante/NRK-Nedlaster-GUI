@@ -72,10 +72,6 @@ namespace NRKLastNed.Views
             lblAppVersion.Text = "Sjekker...";
             btnAppUpdate.IsEnabled = false;
 
-#if DEBUG
-            lblAppVersion.Text = "Dev Mode";
-            btnAppUpdate.ToolTip = "Oppdatering deaktivert i debug.";
-#else
             _pendingAppUpdate = await _appUpdateService.CheckForAppUpdatesAsync();
 
             if (_pendingAppUpdate.IsNewVersionAvailable)
@@ -90,7 +86,6 @@ namespace NRKLastNed.Views
                 btnAppUpdate.Content = "Oppdatert";
                 btnAppUpdate.IsEnabled = false;
             }
-#endif
 
             // --- 2. SJEKK YT-DLP OPPDATERING ---
             lblYtDlpVersion.Text = "Sjekker...";
