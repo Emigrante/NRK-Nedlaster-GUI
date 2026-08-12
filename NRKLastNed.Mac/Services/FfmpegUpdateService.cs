@@ -22,6 +22,14 @@ namespace NRKLastNed.Mac.Services
             public DateTime PublishedAt { get; set; }
         }
 
+        private static readonly HttpClient _httpClient;
+
+        static FfmpegUpdateService()
+        {
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
+        }
+
         public FfmpegUpdateService()
         {
             _toolsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools");
@@ -45,51 +53,48 @@ namespace NRKLastNed.Mac.Services
 
         public async Task<FfmpegUpdateInfo> CheckForUpdatesAsync()
         {
-            var info = new FfmpegUpdateInfo { IsNewVersionAvailable = false, LatestVersion = "Ukjent" };
+            var info = new FfmpegUpdateInfo { IsNewVersionAvailable = false, LatestVersion = "Ukjent", DownloadUrl = "" };
 
             try
             {
-                using (var client = new HttpClient())
+                var response = await _httpClient.GetStringAsync(RepoUrl);
+
+                using (JsonDocument doc = JsonDocument.Parse(response))
                 {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-                    var response = await client.GetStringAsync(RepoUrl);
-
-                    using (JsonDocument doc = JsonDocument.Parse(response))
+                    var root = doc.RootElement;
+                    string published = root.TryGetProperty("published_at", out var pubProp) ? (pubProp.GetString() ?? "") : "";
+                    if (DateTime.TryParse(published, out DateTime pubDate))
                     {
-                        var root = doc.RootElement;
-                        string published = root.GetProperty("published_at").GetString();
-                        DateTime pubDate = DateTime.Parse(published);
-
                         info.LatestVersion = pubDate.ToString("yyyy-MM-dd");
                         info.PublishedAt = pubDate;
+                    }
 
-                        // Finn download URL for macOS
-                        if (root.TryGetProperty("assets", out var assets))
+                    // Finn download URL for macOS
+                    if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var asset in assets.EnumerateArray())
                         {
-                            foreach (var asset in assets.EnumerateArray())
+                            string name = asset.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
+                            string targetName = PlatformHelper.GetFFmpegDownloadFilename();
+                            if (!string.IsNullOrEmpty(name) && name.Contains(targetName) && !name.Contains("shared"))
                             {
-                                string name = asset.GetProperty("name").GetString();
-                                string targetName = PlatformHelper.GetFFmpegDownloadFilename();
-                                if (name.Contains(targetName) && !name.Contains("shared"))
-                                {
-                                    info.DownloadUrl = asset.GetProperty("browser_download_url").GetString();
-                                    break;
-                                }
+                                info.DownloadUrl = asset.TryGetProperty("browser_download_url", out var dlProp) ? (dlProp.GetString() ?? "") : "";
+                                break;
                             }
                         }
+                    }
 
-                        string localPath = PlatformHelper.GetToolPath("ffmpeg");
-                        if (!File.Exists(localPath))
+                    string localPath = PlatformHelper.GetToolPath("ffmpeg");
+                    if (!File.Exists(localPath))
+                    {
+                        info.IsNewVersionAvailable = true;
+                    }
+                    else
+                    {
+                        DateTime localDate = File.GetLastWriteTimeUtc(localPath);
+                        if (info.PublishedAt > localDate.AddHours(24))
                         {
                             info.IsNewVersionAvailable = true;
-                        }
-                        else
-                        {
-                            DateTime localDate = File.GetLastWriteTimeUtc(localPath);
-                            if (pubDate > localDate.AddHours(24))
-                            {
-                                info.IsNewVersionAvailable = true;
-                            }
                         }
                     }
                 }
@@ -111,11 +116,8 @@ namespace NRKLastNed.Mac.Services
             try
             {
                 progress.Report("Laster ned...");
-                using (var client = new HttpClient())
-                {
-                    var data = await client.GetByteArrayAsync(info.DownloadUrl);
-                    await File.WriteAllBytesAsync(zipPath, data);
-                }
+                var data = await _httpClient.GetByteArrayAsync(info.DownloadUrl);
+                await File.WriteAllBytesAsync(zipPath, data);
 
                 progress.Report("Pakker ut...");
                 if (!Directory.Exists(_toolsPath)) Directory.CreateDirectory(_toolsPath);

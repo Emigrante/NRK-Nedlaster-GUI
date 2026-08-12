@@ -1,4 +1,4 @@
-﻿using NRKLastNed.Models;
+using NRKLastNed.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace NRKLastNed.Services
 {
-    public class YtDlpService
+    public partial class YtDlpService
     {
         public class AnalysisProgressInfo
         {
@@ -301,7 +301,7 @@ namespace NRKLastNed.Services
             };
         }
 
-        private List<string> ExtractResolutionsFromJson(JsonElement element)
+        internal List<string> ExtractResolutionsFromJson(JsonElement element)
         {
             var resolutions = new HashSet<string>();
             resolutions.Add("best");
@@ -319,10 +319,13 @@ namespace NRKLastNed.Services
             }
 
             var sortedList = new List<string>(resolutions);
-            sortedList.Sort((a, b) => {
+            sortedList.Sort((a, b) =>
+            {
                 if (a == "best") return -1;
                 if (b == "best") return 1;
-                if (int.TryParse(a, out int ia) && int.TryParse(b, out int ib)) return ib.CompareTo(ia);
+                bool aIsNum = int.TryParse(a, out int ia);
+                bool bIsNum = int.TryParse(b, out int ib);
+                if (aIsNum && bIsNum) return ib.CompareTo(ia);
                 return 0;
             });
 
@@ -342,31 +345,30 @@ namespace NRKLastNed.Services
                 item.SelectedResolution = "best";
         }
 
-        private DownloadItem ParseJsonEntry(JsonElement element, string originalUrl, bool isTelevision)
+        internal DownloadItem ParseJsonEntry(JsonElement element, string originalUrl, bool isTelevision)
         {
-            string title = element.TryGetProperty("title", out var t) ? t.GetString() : "Ukjent";
-            string url = element.TryGetProperty("webpage_url", out var u) ? u.GetString() : originalUrl;
+            string title = (element.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String) ? (t.GetString() ?? "Ukjent") : "Ukjent";
+            string url = (element.TryGetProperty("webpage_url", out var u) && u.ValueKind == JsonValueKind.String) ? (u.GetString() ?? originalUrl) : originalUrl;
 
             string season = element.TryGetProperty("season_number", out var s) ? s.ToString() : "";
             string episode = element.TryGetProperty("episode_number", out var e) ? e.ToString() : "";
-            string series = element.TryGetProperty("series", out var ser) ? ser.GetString() : "";
+            string series = (element.TryGetProperty("series", out var ser) && ser.ValueKind == JsonValueKind.String) ? (ser.GetString() ?? "") : "";
 
             string cleanTitle = title;
             if (!string.IsNullOrEmpty(series) && cleanTitle.StartsWith(series, StringComparison.OrdinalIgnoreCase))
             {
                 cleanTitle = cleanTitle.Substring(series.Length).Trim();
-                cleanTitle = Regex.Replace(cleanTitle, @"^[\s-–]+", "");
+                cleanTitle = LeadingSeparatorRegex().Replace(cleanTitle, "");
             }
-            cleanTitle = Regex.Replace(cleanTitle, @"^\d+\.\s+", "");
+            cleanTitle = LeadingNumberRegex().Replace(cleanTitle, "");
 
             string displayTitle = cleanTitle;
             string seInfo = "";
 
-            if (!string.IsNullOrEmpty(season) && !string.IsNullOrEmpty(episode))
+            if (int.TryParse(season, out int sNum) && int.TryParse(episode, out int eNum))
             {
-                seInfo = $"S{int.Parse(season):00}E{int.Parse(episode):00}";
-                // ENDRET: Nytt format: Serie - SxxExx - Tittel
-                displayTitle = $"{series} - {seInfo} - {cleanTitle}";
+                seInfo = $"S{sNum:00}E{eNum:00}";
+                displayTitle = string.IsNullOrEmpty(series) ? $"{seInfo} - {cleanTitle}" : $"{series} - {seInfo} - {cleanTitle}";
             }
             else
             {
@@ -469,7 +471,7 @@ namespace NRKLastNed.Services
 
             using (var process = new Process { StartInfo = startInfo })
             {
-                using (token.Register(() => { try { if (!process.HasExited) process.Kill(); } catch { } }))
+                using (token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch { } }))
                 {
                     process.OutputDataReceived += (sender, e) =>
                     {
@@ -500,7 +502,7 @@ namespace NRKLastNed.Services
                     catch (OperationCanceledException)
                     {
                         LogService.Log($"Avbrutt: {item.Title}", LogLevel.Info, _settings);
-                        try { if (!process.HasExited) process.Kill(); } catch { }
+                        try { if (!process.HasExited) process.Kill(true); } catch { }
 
                         try
                         {
@@ -555,12 +557,11 @@ namespace NRKLastNed.Services
             }
         }
 
-        private void DetectMediaFile(string line)
+        internal void DetectMediaFile(string line)
         {
-            string lowerLine = line.ToLowerInvariant();
-            if (lowerLine.Contains("destination:"))
+            if (line.Contains("destination:", StringComparison.OrdinalIgnoreCase))
             {
-                if (lowerLine.Contains(".jpg") || lowerLine.Contains(".webp") || lowerLine.Contains(".png") || lowerLine.Contains(".vtt") || lowerLine.Contains(".srt") || lowerLine.Contains(".xml"))
+                if (line.Contains(".jpg", StringComparison.OrdinalIgnoreCase) || line.Contains(".webp", StringComparison.OrdinalIgnoreCase) || line.Contains(".png", StringComparison.OrdinalIgnoreCase) || line.Contains(".vtt", StringComparison.OrdinalIgnoreCase) || line.Contains(".srt", StringComparison.OrdinalIgnoreCase) || line.Contains(".xml", StringComparison.OrdinalIgnoreCase))
                 {
                     _isIgnoringCurrentFile = true;
                     return;
@@ -570,11 +571,11 @@ namespace NRKLastNed.Services
             }
         }
 
-        private void ParseProgress(string line, IProgress<string> text, IProgress<double> percent)
+        internal void ParseProgress(string line, IProgress<string> text, IProgress<double> percent)
         {
             bool isDownloadLine = line.StartsWith("[download]");
 
-            var match = Regex.Match(line, @"\[download\]\s+(\d+(\.\d+)?)%");
+            var match = DownloadPercentRegex().Match(line);
             if (match.Success && double.TryParse(match.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out double rawPercent))
             {
                 if (_isIgnoringCurrentFile) return;
@@ -610,5 +611,14 @@ namespace NRKLastNed.Services
                 LogService.Log($"Ferdigstiller: {line.Trim()}", LogLevel.Debug, _settings);
             }
         }
+
+        [GeneratedRegex(@"\[download\]\s+(\d+(\.\d+)?)%")]
+        private static partial Regex DownloadPercentRegex();
+
+        [GeneratedRegex(@"^[\s-–]+")]
+        private static partial Regex LeadingSeparatorRegex();
+
+        [GeneratedRegex(@"^\d+\.\s+")]
+        private static partial Regex LeadingNumberRegex();
     }
 }

@@ -16,9 +16,9 @@ namespace NRKLastNed.Mac.Services
     {
         private static string _logFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
 
-        public static void Log(string message, LogLevel level, AppSettings settings)
+        public static void Log(string message, LogLevel level, AppSettings? settings = null)
         {
-            if (!settings.EnableLogging || level > settings.LogLevel) return;
+            if (settings != null && (!settings.EnableLogging || level > settings.LogLevel)) return;
 
             try
             {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -19,6 +19,14 @@ namespace NRKLastNed.Services
             public string LatestVersion { get; set; }
             public string CurrentVersion { get; set; }
             public string DownloadUrl { get; set; } // NY: Lagrer URL for nedlasting
+        }
+
+        private static readonly HttpClient _httpClient;
+
+        static UpdateService()
+        {
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
         }
 
         public UpdateService()
@@ -44,6 +52,7 @@ namespace NRKLastNed.Services
             {
                 using (var process = Process.Start(startInfo))
                 {
+                    if (process == null) return "Ukjent";
                     var output = await process.StandardOutput.ReadToEndAsync();
                     await process.WaitForExitAsync();
                     return output.Trim();
@@ -58,43 +67,38 @@ namespace NRKLastNed.Services
         public async Task<ToolUpdateInfo> CheckForYtDlpUpdateAsync()
         {
             string currentVer = await GetYtDlpVersionAsync();
-            var info = new ToolUpdateInfo { CurrentVersion = currentVer, IsNewVersionAvailable = false };
+            var info = new ToolUpdateInfo { CurrentVersion = currentVer, IsNewVersionAvailable = false, LatestVersion = "Ukjent", DownloadUrl = "" };
 
             try
             {
-                using (var client = new HttpClient())
+                var response = await _httpClient.GetStringAsync(RepoUrl);
+
+                using (JsonDocument doc = JsonDocument.Parse(response))
                 {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-                    var response = await client.GetStringAsync(RepoUrl);
+                    var root = doc.RootElement;
+                    info.LatestVersion = root.TryGetProperty("tag_name", out var tagProp) ? (tagProp.GetString() ?? "") : "";
 
-                    using (JsonDocument doc = JsonDocument.Parse(response))
+                    // Finn nedlastings-URL for yt-dlp.exe
+                    if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                     {
-                        var root = doc.RootElement;
-                        info.LatestVersion = root.GetProperty("tag_name").GetString();
-
-                        // Finn nedlastings-URL for yt-dlp.exe
-                        if (root.TryGetProperty("assets", out var assets))
+                        foreach (var asset in assets.EnumerateArray())
                         {
-                            foreach (var asset in assets.EnumerateArray())
+                            string name = asset.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
+                            if (name == "yt-dlp.exe")
                             {
-                                string name = asset.GetProperty("name").GetString();
-                                if (name == "yt-dlp.exe")
-                                {
-                                    info.DownloadUrl = asset.GetProperty("browser_download_url").GetString();
-                                    break;
-                                }
+                                info.DownloadUrl = asset.TryGetProperty("browser_download_url", out var dlProp) ? (dlProp.GetString() ?? "") : "";
+                                break;
                             }
                         }
+                    }
 
-                        if (currentVer == "Ikke installert" || currentVer == "Ukjent")
-                        {
-                            info.IsNewVersionAvailable = true;
-                        }
-                        else
-                        {
-                            // Sjekk om versjonene er ulike
-                            info.IsNewVersionAvailable = !string.Equals(currentVer, info.LatestVersion, StringComparison.OrdinalIgnoreCase);
-                        }
+                    if (currentVer == "Ikke installert" || currentVer == "Ukjent")
+                    {
+                        info.IsNewVersionAvailable = true;
+                    }
+                    else
+                    {
+                        info.IsNewVersionAvailable = !string.Equals(currentVer, info.LatestVersion, StringComparison.OrdinalIgnoreCase);
                     }
                 }
             }
@@ -106,31 +110,19 @@ namespace NRKLastNed.Services
             return info;
         }
 
-        // ENDRET: Tar nå imot info-objektet for å vite URL
-        public async Task<string> UpdateYtDlpAsync(ToolUpdateInfo info = null)
+        public async Task<string> UpdateYtDlpAsync(ToolUpdateInfo? info = null)
         {
-            // Hvis vi mangler info eller URL, prøv den gamle metoden (hvis filen finnes)
             if (info == null || string.IsNullOrEmpty(info.DownloadUrl))
             {
                 if (!File.Exists(_ytDlpPath)) return "Mangler nedlastings-URL og filen finnes ikke.";
-
-                // Fallback til innebygd update hvis filen finnes
                 return await RunInternalUpdate();
             }
 
-            // LAST NED FRA GITHUB (Fungerer både for oppdatering og ny-installasjon)
             try
             {
                 if (!Directory.Exists(_toolsPath)) Directory.CreateDirectory(_toolsPath);
-
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-                    var data = await client.GetByteArrayAsync(info.DownloadUrl);
-
-                    // Skriv til disk (overskriver eksisterende)
-                    await File.WriteAllBytesAsync(_ytDlpPath, data);
-                }
+                var data = await _httpClient.GetByteArrayAsync(info.DownloadUrl);
+                await File.WriteAllBytesAsync(_ytDlpPath, data);
 
                 return "yt-dlp er lastet ned og oppdatert!";
             }

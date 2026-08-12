@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using NRKLastNed.Models;
 
@@ -38,9 +38,9 @@ namespace NRKLastNed.Services
             }
         }
 
-        public static void Log(string message, LogLevel level, AppSettings settings)
+        public static void Log(string message, LogLevel level, AppSettings? settings = null)
         {
-            if (!settings.EnableLogging || level > settings.LogLevel) return;
+            if (settings != null && (!settings.EnableLogging || level > settings.LogLevel)) return;
 
             try
             {

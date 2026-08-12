@@ -21,6 +21,14 @@ namespace NRKLastNed.Mac.Services
             public string DownloadUrl { get; set; }
         }
 
+        private static readonly HttpClient _httpClient;
+
+        static UpdateService()
+        {
+            _httpClient = new HttpClient();
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
+        }
+
         public UpdateService()
         {
             _toolsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools");
@@ -44,6 +52,7 @@ namespace NRKLastNed.Mac.Services
             {
                 using (var process = Process.Start(startInfo))
                 {
+                    if (process == null) return "Ukjent";
                     var output = await process.StandardOutput.ReadToEndAsync();
                     await process.WaitForExitAsync();
                     return output.Trim();
@@ -58,43 +67,38 @@ namespace NRKLastNed.Mac.Services
         public async Task<ToolUpdateInfo> CheckForYtDlpUpdateAsync()
         {
             string currentVer = await GetYtDlpVersionAsync();
-            var info = new ToolUpdateInfo { CurrentVersion = currentVer, IsNewVersionAvailable = false };
+            var info = new ToolUpdateInfo { CurrentVersion = currentVer, IsNewVersionAvailable = false, LatestVersion = "Ukjent", DownloadUrl = "" };
 
             try
             {
-                using (var client = new HttpClient())
+                var response = await _httpClient.GetStringAsync(RepoUrl);
+
+                using (JsonDocument doc = JsonDocument.Parse(response))
                 {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-                    var response = await client.GetStringAsync(RepoUrl);
+                    var root = doc.RootElement;
+                    info.LatestVersion = root.TryGetProperty("tag_name", out var tagProp) ? (tagProp.GetString() ?? "") : "";
 
-                    using (JsonDocument doc = JsonDocument.Parse(response))
+                    // Finn nedlastings-URL for yt-dlp (macOS uses executable without .exe)
+                    if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                     {
-                        var root = doc.RootElement;
-                        info.LatestVersion = root.GetProperty("tag_name").GetString();
-
-                        // Finn nedlastings-URL for yt-dlp (macOS uses executable without .exe)
-                        if (root.TryGetProperty("assets", out var assets))
+                        foreach (var asset in assets.EnumerateArray())
                         {
-                            foreach (var asset in assets.EnumerateArray())
+                            string name = asset.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
+                            if (name == "yt-dlp" || (PlatformHelper.IsWindows && name == "yt-dlp.exe"))
                             {
-                                string name = asset.GetProperty("name").GetString();
-                                // On macOS, we need the executable binary (not .exe)
-                                if (name == "yt-dlp" || (PlatformHelper.IsWindows && name == "yt-dlp.exe"))
-                                {
-                                    info.DownloadUrl = asset.GetProperty("browser_download_url").GetString();
-                                    break;
-                                }
+                                info.DownloadUrl = asset.TryGetProperty("browser_download_url", out var dlProp) ? (dlProp.GetString() ?? "") : "";
+                                break;
                             }
                         }
+                    }
 
-                        if (currentVer == "Ikke installert" || currentVer == "Ukjent")
-                        {
-                            info.IsNewVersionAvailable = true;
-                        }
-                        else
-                        {
-                            info.IsNewVersionAvailable = !string.Equals(currentVer, info.LatestVersion, StringComparison.OrdinalIgnoreCase);
-                        }
+                    if (currentVer == "Ikke installert" || currentVer == "Ukjent")
+                    {
+                        info.IsNewVersionAvailable = true;
+                    }
+                    else
+                    {
+                        info.IsNewVersionAvailable = !string.Equals(currentVer, info.LatestVersion, StringComparison.OrdinalIgnoreCase);
                     }
                 }
             }
@@ -106,7 +110,7 @@ namespace NRKLastNed.Mac.Services
             return info;
         }
 
-        public async Task<string> UpdateYtDlpAsync(ToolUpdateInfo info = null)
+        public async Task<string> UpdateYtDlpAsync(ToolUpdateInfo? info = null)
         {
             if (info == null || string.IsNullOrEmpty(info.DownloadUrl))
             {
@@ -119,14 +123,10 @@ namespace NRKLastNed.Mac.Services
             {
                 if (!Directory.Exists(_toolsPath)) Directory.CreateDirectory(_toolsPath);
 
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-                    var data = await client.GetByteArrayAsync(info.DownloadUrl);
+                var data = await _httpClient.GetByteArrayAsync(info.DownloadUrl);
 
-                    await File.WriteAllBytesAsync(_ytDlpPath, data);
+                await File.WriteAllBytesAsync(_ytDlpPath, data);
 
-                    // On macOS/Linux, make executable
                     if (PlatformHelper.IsMacOS || PlatformHelper.IsLinux)
                     {
                         try
@@ -141,7 +141,6 @@ namespace NRKLastNed.Mac.Services
                         }
                         catch { }
                     }
-                }
 
                 return "yt-dlp er lastet ned og oppdatert!";
             }

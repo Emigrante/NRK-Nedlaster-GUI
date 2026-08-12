@@ -344,12 +344,12 @@ namespace NRKLastNed.Mac.Services
 
         private DownloadItem ParseJsonEntry(JsonElement element, string originalUrl, bool isTelevision)
         {
-            string title = element.TryGetProperty("title", out var t) ? t.GetString() : "Ukjent";
-            string url = element.TryGetProperty("webpage_url", out var u) ? u.GetString() : originalUrl;
+            string title = (element.TryGetProperty("title", out var t) && t.ValueKind == JsonValueKind.String) ? (t.GetString() ?? "Ukjent") : "Ukjent";
+            string url = (element.TryGetProperty("webpage_url", out var u) && u.ValueKind == JsonValueKind.String) ? (u.GetString() ?? originalUrl) : originalUrl;
 
             string season = element.TryGetProperty("season_number", out var s) ? s.ToString() : "";
             string episode = element.TryGetProperty("episode_number", out var e) ? e.ToString() : "";
-            string series = element.TryGetProperty("series", out var ser) ? ser.GetString() : "";
+            string series = (element.TryGetProperty("series", out var ser) && ser.ValueKind == JsonValueKind.String) ? (ser.GetString() ?? "") : "";
 
             string cleanTitle = title;
             if (!string.IsNullOrEmpty(series) && cleanTitle.StartsWith(series, StringComparison.OrdinalIgnoreCase))
@@ -362,10 +362,10 @@ namespace NRKLastNed.Mac.Services
             string displayTitle = cleanTitle;
             string seInfo = "";
 
-            if (!string.IsNullOrEmpty(season) && !string.IsNullOrEmpty(episode))
+            if (int.TryParse(season, out int sNum) && int.TryParse(episode, out int eNum))
             {
-                seInfo = $"S{int.Parse(season):00}E{int.Parse(episode):00}";
-                displayTitle = $"{series} - {seInfo} - {cleanTitle}";
+                seInfo = $"S{sNum:00}E{eNum:00}";
+                displayTitle = string.IsNullOrEmpty(series) ? $"{seInfo} - {cleanTitle}" : $"{series} - {seInfo} - {cleanTitle}";
             }
             else
             {
@@ -467,7 +467,7 @@ namespace NRKLastNed.Mac.Services
 
             using (var process = new Process { StartInfo = startInfo })
             {
-                using (token.Register(() => { try { if (!process.HasExited) process.Kill(); } catch { } }))
+                using (token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch { } }))
                 {
                     process.OutputDataReceived += (sender, e) =>
                     {
@@ -498,7 +498,7 @@ namespace NRKLastNed.Mac.Services
                     catch (OperationCanceledException)
                     {
                         LogService.Log($"Avbrutt: {item.Title}", LogLevel.Info, _settings);
-                        try { if (!process.HasExited) process.Kill(); } catch { }
+                        try { if (!process.HasExited) process.Kill(true); } catch { }
 
                         try
                         {

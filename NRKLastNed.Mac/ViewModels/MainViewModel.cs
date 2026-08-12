@@ -330,7 +330,7 @@ namespace NRKLastNed.Mac.ViewModels
                 }
                 finally
                 {
-                    if (suspendable != null && suspendable != null) suspendable.Resume();
+                    if (suspendable != null) suspendable.Resume();
                 }
             }
             finally

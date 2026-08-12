@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -326,7 +326,7 @@ namespace NRKLastNed.ViewModels
                 }
                 finally
                 {
-                    if (suspendable != null && suspendable != null) suspendable.Resume();
+                    if (suspendable != null) suspendable.Resume();
                 }
             }
             finally

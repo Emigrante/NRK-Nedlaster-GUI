@@ -17,7 +17,7 @@ namespace NRKLastNed.Mac.Models
         // Legacy - for bakoverkompatibilitet
         public string OutputFolder 
         { 
-            get => UseSameFolderForBoth ? TvOutputFolder : TvOutputFolder;
+            get => TvOutputFolder;
             set => TvOutputFolder = value;
         }
 
@@ -43,7 +43,10 @@ namespace NRKLastNed.Mac.Models
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(SettingsPath, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogService.Log($"Feil ved lagring av innstillinger: {ex.Message}", LogLevel.Error, settings);
+            }
         }
 
         public static AppSettings Load()
@@ -61,7 +64,11 @@ namespace NRKLastNed.Mac.Models
                     }
                     return settings;
                 }
-                catch { return new AppSettings(); }
+                catch (Exception ex)
+                {
+                    LogService.Log($"Feil ved lasting av innstillinger: {ex.Message}", LogLevel.Error);
+                    return new AppSettings();
+                }
             }
             var defaultSettings = new AppSettings();
             if (string.IsNullOrEmpty(defaultSettings.OutputFolder))

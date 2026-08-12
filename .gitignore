@@ -366,3 +366,26 @@ FodyWeavers.xsd
 Tools/
 **/Tools/
 *.exe
+
+# Inno Setup 6 og installasjonsfiler
+*.iss
+*_Setup.exe
+*Setup*.exe
+
+# Interne Benchmark- og testprosjekter
+BenchmarkSuite1/
+BenchmarkDotNet.Artifacts/
+
+# Lokale bygg- og publiseringsskript
+build-release.ps1
+publish/
+
+# macOS og Windows systemfiler
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Lokale logger og innstillinger
+Logs/
+*.log
+settings.json
