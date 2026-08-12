@@ -24,11 +24,19 @@ jobs:
       run: |
         chmod +x ./publish/mac/NRKLastNed.Mac
         
+    - name: Set Release Filename
+      run: |
+        TAG="${{ github.event.release.tag_name }}"
+        if [[ "$TAG" != v* ]]; then
+          TAG="v${TAG}"
+        fi
+        echo "ZIP_NAME=NRK_Nedlaster_macOS_${TAG}_x64.zip" >> $GITHUB_ENV
+
     - name: Zip Mac Release
       # Pakker alt inn i en ZIP som Mac-brukere kan laste ned
       run: |
         cd publish/mac
-        zip -r ../../NRKLastNed-MacOS-x64.zip .
+        zip -r "../../${{ env.ZIP_NAME }}" .
         cd ../..
       
     - name: Upload Mac Asset
@@ -37,6 +45,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./NRKLastNed-MacOS-x64.zip
-        asset_name: NRKLastNed-MacOS-x64.zip
+        asset_path: ./${{ env.ZIP_NAME }}
+        asset_name: ${{ env.ZIP_NAME }}
         asset_content_type: application/zip
