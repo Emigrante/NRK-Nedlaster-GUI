@@ -8,16 +8,18 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>NRK.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
-    <Version>1.10.0</Version>
-    <AssemblyVersion>1.10.0.0</AssemblyVersion>
-    <FileVersion>1.10.0.0</FileVersion>
+    <Version>1.20</Version>
+    <AssemblyVersion>1.20</AssemblyVersion>
+    <FileVersion>1.20</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyMetadata Include="BuildDate" Value="$([System.DateTime]::UtcNow.ToString(&quot;yyyy-MM-dd&quot;))" />
     <None Remove="Assets\logo.ico" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NRKLastNed.Core\NRKLastNed.Core.csproj" />
     <InternalsVisibleTo Include="BenchmarkSuite1" />
   </ItemGroup>
 

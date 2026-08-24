@@ -1,9 +1,9 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.Json;
-using NRKLastNed.Mac.Services;
+using NRKLastNed.Core.Services;
 
-namespace NRKLastNed.Mac.Models
+namespace NRKLastNed.Core.Models
 {
     public class AppSettings
     {
@@ -11,7 +11,7 @@ namespace NRKLastNed.Mac.Models
         public string TvOutputFolder { get; set; } = "";
         public string RadioOutputFolder { get; set; } = "";
 
-        // Alternativ: Bruk samme mappe for både TV og Radio
+        // Alternativ: Bruk samme mappe for bade TV og Radio
         public bool UseSameFolderForBoth { get; set; } = false;
 
         // Legacy - for bakoverkompatibilitet
@@ -24,7 +24,7 @@ namespace NRKLastNed.Mac.Models
         public string TempFolder { get; set; } = "";
         public bool UseSystemTemp { get; set; } = true;
 
-        // Standard oppløsning (720 som standard)
+        // Standard opplosning (720 som standard)
         public string DefaultResolution { get; set; } = "720";
 
         // Tema: "System", "Light", "Dark"
@@ -34,14 +34,30 @@ namespace NRKLastNed.Mac.Models
         public bool EnableLogging { get; set; } = true;
         public LogLevel LogLevel { get; set; } = LogLevel.Info;
 
-        private static string SettingsPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
+        private static readonly string _settingsFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "NRKLastNed");
+
+        private static readonly string _settingsPath = Path.Combine(_settingsFolder, "settings.json");
+
+        public AppSettings()
+        {
+            string defaultBase = PlatformService.Instance.GetDefaultOutputFolder();
+            TvOutputFolder = Path.Combine(defaultBase, "TV");
+            RadioOutputFolder = Path.Combine(defaultBase, "Radio");
+        }
 
         public static void Save(AppSettings settings)
         {
             try
             {
+                if (!Directory.Exists(_settingsFolder))
+                {
+                    Directory.CreateDirectory(_settingsFolder);
+                }
+
                 var json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(SettingsPath, json);
+                File.WriteAllText(_settingsPath, json);
             }
             catch (Exception ex)
             {
@@ -51,17 +67,24 @@ namespace NRKLastNed.Mac.Models
 
         public static AppSettings Load()
         {
-            if (File.Exists(SettingsPath))
+            if (File.Exists(_settingsPath))
             {
                 try
                 {
-                    var json = File.ReadAllText(SettingsPath);
+                    var json = File.ReadAllText(_settingsPath);
                     var settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
-                    // Ensure output folder uses correct default if empty
-                    if (string.IsNullOrEmpty(settings.OutputFolder))
+
+                    if (string.IsNullOrEmpty(settings.TvOutputFolder))
                     {
-                        settings.OutputFolder = NRKLastNed.Mac.PlatformHelper.GetDefaultOutputFolder();
+                        string defaultBase = PlatformService.Instance.GetDefaultOutputFolder();
+                        settings.TvOutputFolder = Path.Combine(defaultBase, "TV");
                     }
+                    if (string.IsNullOrEmpty(settings.RadioOutputFolder))
+                    {
+                        string defaultBase = PlatformService.Instance.GetDefaultOutputFolder();
+                        settings.RadioOutputFolder = Path.Combine(defaultBase, "Radio");
+                    }
+
                     return settings;
                 }
                 catch (Exception ex)
@@ -70,12 +93,7 @@ namespace NRKLastNed.Mac.Models
                     return new AppSettings();
                 }
             }
-            var defaultSettings = new AppSettings();
-            if (string.IsNullOrEmpty(defaultSettings.OutputFolder))
-            {
-                defaultSettings.OutputFolder = NRKLastNed.Mac.PlatformHelper.GetDefaultOutputFolder();
-            }
-            return defaultSettings;
+            return new AppSettings();
         }
     }
 }

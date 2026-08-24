@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.Win32;
@@ -32,10 +32,9 @@ namespace NRKLastNed.Services
                 {
                     if (key != null)
                     {
-                        object registryValueObject = key.GetValue("AppsUseLightTheme");
-                        if (registryValueObject != null)
+                        object? registryValueObject = key.GetValue("AppsUseLightTheme");
+                        if (registryValueObject is int registryValue)
                         {
-                            int registryValue = (int)registryValueObject;
                             if (registryValue > 0) ApplyLightTheme();
                             else ApplyDarkTheme();
                             return;

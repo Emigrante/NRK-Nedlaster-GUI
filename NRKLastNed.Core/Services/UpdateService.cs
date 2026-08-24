@@ -1,38 +1,32 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using NRKLastNed.Core.Contracts;
+using NRKLastNed.Core.Models;
 
-namespace NRKLastNed.Services
+namespace NRKLastNed.Core.Services
 {
     public class UpdateService
     {
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private const string RepoUrl = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
         private readonly string _toolsPath;
         private readonly string _ytDlpPath;
-        private const string RepoUrl = "https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest";
+        private readonly IPlatformService _platform;
 
-        public class ToolUpdateInfo
+        public UpdateService(IPlatformService? platform = null)
         {
-            public bool IsNewVersionAvailable { get; set; }
-            public string LatestVersion { get; set; }
-            public string CurrentVersion { get; set; }
-            public string DownloadUrl { get; set; } // NY: Lagrer URL for nedlasting
-        }
-
-        private static readonly HttpClient _httpClient;
-
-        static UpdateService()
-        {
-            _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
-        }
-
-        public UpdateService()
-        {
+            _platform = platform ?? PlatformService.Instance;
             _toolsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tools");
-            _ytDlpPath = Path.Combine(_toolsPath, "yt-dlp.exe");
+            _ytDlpPath = _platform.GetToolPath("yt-dlp");
+
+            if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+            {
+                _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("NRK-Nedlaster-GUI");
+            }
         }
 
         public async Task<string> GetYtDlpVersionAsync()
@@ -42,11 +36,11 @@ namespace NRKLastNed.Services
             var startInfo = new ProcessStartInfo
             {
                 FileName = _ytDlpPath,
-                Arguments = "--version",
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            startInfo.ArgumentList.Add("--version");
 
             try
             {
@@ -78,13 +72,14 @@ namespace NRKLastNed.Services
                     var root = doc.RootElement;
                     info.LatestVersion = root.TryGetProperty("tag_name", out var tagProp) ? (tagProp.GetString() ?? "") : "";
 
-                    // Finn nedlastings-URL for yt-dlp.exe
+                    string targetAsset = _platform.IsWindows ? "yt-dlp.exe" : "yt-dlp";
+
                     if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                     {
                         foreach (var asset in assets.EnumerateArray())
                         {
                             string name = asset.TryGetProperty("name", out var nProp) ? (nProp.GetString() ?? "") : "";
-                            if (name == "yt-dlp.exe")
+                            if (name.Equals(targetAsset, StringComparison.OrdinalIgnoreCase))
                             {
                                 info.DownloadUrl = asset.TryGetProperty("browser_download_url", out var dlProp) ? (dlProp.GetString() ?? "") : "";
                                 break;
@@ -115,14 +110,21 @@ namespace NRKLastNed.Services
             if (info == null || string.IsNullOrEmpty(info.DownloadUrl))
             {
                 if (!File.Exists(_ytDlpPath)) return "Mangler nedlastings-URL og filen finnes ikke.";
+
                 return await RunInternalUpdate();
             }
 
             try
             {
                 if (!Directory.Exists(_toolsPath)) Directory.CreateDirectory(_toolsPath);
-                var data = await _httpClient.GetByteArrayAsync(info.DownloadUrl);
-                await File.WriteAllBytesAsync(_ytDlpPath, data);
+
+                using (var responseStream = await _httpClient.GetStreamAsync(info.DownloadUrl))
+                using (var fileStream = new FileStream(_ytDlpPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
+                {
+                    await responseStream.CopyToAsync(fileStream);
+                }
+
+                _platform.SetExecutablePermission(_ytDlpPath);
 
                 return "yt-dlp er lastet ned og oppdatert!";
             }
@@ -137,17 +139,18 @@ namespace NRKLastNed.Services
             var startInfo = new ProcessStartInfo
             {
                 FileName = _ytDlpPath,
-                Arguments = "--update",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            startInfo.ArgumentList.Add("--update");
 
             try
             {
                 using (var process = Process.Start(startInfo))
                 {
+                    if (process == null) return "Kunne ikke starte oppdateringsprosess.";
                     var output = await process.StandardOutput.ReadToEndAsync();
                     var error = await process.StandardError.ReadToEndAsync();
                     await process.WaitForExitAsync();

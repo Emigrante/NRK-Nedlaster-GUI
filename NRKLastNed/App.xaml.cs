@@ -1,5 +1,6 @@
-﻿using System.Windows;
-using NRKLastNed.Models;
+using System.Windows;
+using NRKLastNed.Core.Models;
+using NRKLastNed.Core.Services;
 using NRKLastNed.Services;
 
 namespace NRKLastNed

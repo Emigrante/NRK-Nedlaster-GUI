@@ -2,22 +2,22 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace NRKLastNed.Models
+namespace NRKLastNed.Core.Models
 {
     public class DownloadItem : INotifyPropertyChanged
     {
-        private string _status;
+        private string _status = "Venter";
         private double _progress;
-        private string _fileName;
-        private string _selectedResolution;
-        private string _selectedLanguage;
+        private string _fileName = "";
+        private string _selectedResolution = "best";
+        private string _selectedLanguage = "Norsk";
         private ObservableCollection<string> _availableResolutions;
         private ObservableCollection<string> _availableLanguages;
         private bool _isTelevision;
 
-        public string Url { get; set; }
-        public string Title { get; set; }
-        public string SeasonEpisode { get; set; } // F.eks "S01E01"
+        public string Url { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string SeasonEpisode { get; set; } = ""; // F.eks "S01E01"
         public bool IsSelected { get; set; } = true; // For checkbox i listen
 
         public bool IsTelevision
@@ -70,10 +70,10 @@ namespace NRKLastNed.Models
 
         public DownloadItem()
         {
-            AvailableResolutions = new ObservableCollection<string>();
+            _availableResolutions = new ObservableCollection<string>();
 
-            // Standard språkliste
-            AvailableLanguages = new ObservableCollection<string>
+            // Standard sprakliste
+            _availableLanguages = new ObservableCollection<string>
             {
                 "Norsk",
                 "Svensk",
@@ -81,11 +81,10 @@ namespace NRKLastNed.Models
                 "Engelsk",
                 "Ukjent"
             };
-            SelectedLanguage = "Norsk"; // Standardvalg
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }

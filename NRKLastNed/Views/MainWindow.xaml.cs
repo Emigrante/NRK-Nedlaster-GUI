@@ -1,5 +1,5 @@
-﻿using System.Windows;
-using NRKLastNed.ViewModels;
+using System.Windows;
+using NRKLastNed.Core.ViewModels;
 
 namespace NRKLastNed.Views
 {

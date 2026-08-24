@@ -18,7 +18,7 @@ namespace NRKLastNed.Mac
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 // Last inn innstillinger og sett tema ved oppstart
-                var settings = Models.AppSettings.Load();
+                var settings = AppSettings.Load();
                 ThemeService.ApplyTheme(settings.AppTheme);
 
                 desktop.MainWindow = new MainWindow();

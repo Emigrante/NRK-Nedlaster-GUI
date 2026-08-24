@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Collections.Generic;
 using Microsoft.Win32;
-using NRKLastNed.Models;
+using NRKLastNed.Core.Models;
+using NRKLastNed.Core.Services;
 using NRKLastNed.Services;
 using System.Diagnostics;
 using System.Reflection;
@@ -17,9 +18,9 @@ namespace NRKLastNed.Views
         private AppUpdateService _appUpdateService;
         private FfmpegUpdateService _ffmpegUpdateService;
 
-        private AppUpdateService.AppUpdateInfo _pendingAppUpdate;
-        private UpdateService.ToolUpdateInfo _pendingYtDlpUpdate; // NY
-        private FfmpegUpdateService.FfmpegUpdateInfo _pendingFfmpegUpdate;
+        private AppUpdateInfo? _pendingAppUpdate;
+        private ToolUpdateInfo? _pendingYtDlpUpdate;
+        private FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
         public SettingsWindow()
         {
@@ -150,14 +151,22 @@ namespace NRKLastNed.Views
         {
             if (_pendingAppUpdate == null || !_pendingAppUpdate.IsNewVersionAvailable) return;
 
-            var res = MessageBox.Show($"Vil du oppdatere til {_pendingAppUpdate.LatestVersion}?",
-                                      "Oppdatering", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            string promptMessage = AppUpdateService.FormatUpdatePromptMessage(_pendingAppUpdate);
+
+            var res = MessageBox.Show(
+                promptMessage,
+                $"Oppdatering tilgjengelig (v{_pendingAppUpdate.LatestVersion})",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
             if (res == MessageBoxResult.Yes)
             {
                 btnAppUpdate.IsEnabled = false;
                 lblAppVersion.Text = "Laster ned...";
-                await _appUpdateService.PerformAppUpdateAsync(_pendingAppUpdate);
+                await _appUpdateService.PerformAppUpdateAsync(_pendingAppUpdate, () =>
+                {
+                    Application.Current.Shutdown();
+                });
             }
         }
 
@@ -189,12 +198,30 @@ namespace NRKLastNed.Views
                     var progress = new Progress<string>(status => lblFfmpegVersion.Text = status);
                     try
                     {
-                        await _ffmpegUpdateService.UpdateFfmpegAsync(_pendingFfmpegUpdate, progress);
-                        MessageBox.Show("FFmpeg er installert/oppdatert!", "Suksess", MessageBoxButton.OK, MessageBoxImage.Information);
+                        var updateResult = await _ffmpegUpdateService.UpdateFfmpegAsync(_pendingFfmpegUpdate, progress);
+
+                        if (updateResult.ChecksumVerified)
+                        {
+                            MessageBox.Show(
+                                $"FFmpeg er installert og oppdatert!\n\n" +
+                                $"✓ SHA-256 Hash kontrollert og verifisert:\n{updateResult.Sha256}\n\n" +
+                                $"Filens integritet og ekthet er bekreftet mot GitHub release checksums.",
+                                "FFmpeg verifisert",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
+                        else
+                        {
+                            MessageBox.Show(
+                                $"FFmpeg er installert og oppdatert!\n\nBeregnet SHA-256 Hash:\n{updateResult.Sha256}",
+                                "Oppdatering fullført",
+                                MessageBoxButton.OK,
+                                MessageBoxImage.Information);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Feil: {ex.Message}", "Feil", MessageBoxButton.OK, MessageBoxImage.Error);
+                        MessageBox.Show($"Feil under oppdatering: {ex.Message}", "Feil", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
             }
@@ -249,13 +276,13 @@ namespace NRKLastNed.Views
             _settings.TempFolder = txtTemp.Text;
             _settings.UseSystemTemp = chkUseSystemTemp.IsChecked == true;
 
-            if (cmbResolution.SelectedItem != null)
-                _settings.DefaultResolution = cmbResolution.SelectedItem.ToString();
+            if (cmbResolution.SelectedItem is string resolution)
+                _settings.DefaultResolution = resolution;
 
-            if (cmbTheme.SelectedItem != null)
+            if (cmbTheme.SelectedItem is string theme)
             {
-                _settings.AppTheme = cmbTheme.SelectedItem.ToString();
-                ThemeService.ApplyTheme(_settings.AppTheme);
+                _settings.AppTheme = theme;
+                ThemeService.ApplyTheme(theme);
             }
 
             _settings.EnableLogging = chkEnableLog.IsChecked == true;

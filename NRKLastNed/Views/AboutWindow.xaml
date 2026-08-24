@@ -1,7 +1,7 @@
-﻿<Window x:Class="NRKLastNed.Views.AboutWindow"
+<Window x:Class="NRKLastNed.Views.AboutWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Om NRK Nedlaster GUI" Height="350" Width="500"
+        Title="Om NRK Nedlaster GUI" Height="390" Width="520"
         ResizeMode="NoResize" WindowStartupLocation="CenterOwner"
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}">
@@ -12,7 +12,17 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Tredjeparts-verktøy" FontSize="20" FontWeight="Bold" Margin="0,0,0,15"/>
+        <!-- Tittel og versjonsinformasjon -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="NRK Nedlaster GUI" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentColor}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <TextBlock Text="Versjon: " FontWeight="SemiBold" Foreground="{DynamicResource TextColor}"/>
+                <TextBlock Text="{Binding VersionText}" Foreground="{DynamicResource TextColor}"/>
+                <TextBlock Text=" • " Margin="6,0" Foreground="{DynamicResource TextMuted}"/>
+                <TextBlock Text="Utgitt: " FontWeight="SemiBold" Foreground="{DynamicResource TextColor}"/>
+                <TextBlock Text="{Binding ReleaseDateText}" Foreground="{DynamicResource TextColor}"/>
+            </StackPanel>
+        </StackPanel>
 
         <StackPanel Grid.Row="1">
             <TextBlock Text="Dette programmet bruker følgende åpen kildekode-verktøy:" 
@@ -33,6 +43,6 @@
             <TextBlock Text="Copyright © Emigrante" HorizontalAlignment="Center" FontWeight="Bold"/>
         </StackPanel>
 
-        <Button Grid.Row="2" Content="Lukk" Click="Close_Click" Width="100" HorizontalAlignment="Right"/>
+        <Button Grid.Row="2" Content="Lukk" Click="Close_Click" Width="100" HorizontalAlignment="Right" ToolTip="Lukk dette vinduet"/>
     </Grid>
 </Window>

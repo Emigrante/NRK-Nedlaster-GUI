@@ -1,7 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
-using NRKLastNed.Mac.ViewModels;
+using NRKLastNed.Core.ViewModels;
 
 namespace NRKLastNed.Mac.Views
 {

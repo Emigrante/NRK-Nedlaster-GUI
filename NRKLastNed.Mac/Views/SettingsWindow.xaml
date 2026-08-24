@@ -50,7 +50,7 @@
 							<ColumnDefinition Width="Auto"/>
 						</Grid.ColumnDefinitions>
 						<TextBox x:Name="txtTvOutput" IsReadOnly="True"/>
-						<Button Grid.Column="1" Content="..." Click="BrowseTvOutput_Click" Margin="10,0,0,0" Width="40"/>
+						<Button Grid.Column="1" Content="..." Click="BrowseTvOutput_Click" Margin="10,0,0,0" Width="40" ToolTip.Tip="Bla gjennom og velg lagringsmappe for TV-programmer"/>
 					</Grid>
 
 					<!-- Radio-mappe (kun synlig når ikke delt mappe) -->
@@ -61,7 +61,7 @@
 							<ColumnDefinition Width="Auto"/>
 						</Grid.ColumnDefinitions>
 						<TextBox x:Name="txtRadioOutput" IsReadOnly="True"/>
-						<Button Grid.Column="1" Content="..." Click="BrowseRadioOutput_Click" Margin="10,0,0,0" Width="40"/>
+						<Button Grid.Column="1" Content="..." Click="BrowseRadioOutput_Click" Margin="10,0,0,0" Width="40" ToolTip.Tip="Bla gjennom og velg lagringsmappe for radioprogrammer"/>
 					</Grid>
 				</StackPanel>
 			</Border>
@@ -81,7 +81,7 @@
 							<ColumnDefinition Width="Auto"/>
 						</Grid.ColumnDefinitions>
 						<TextBox x:Name="txtTemp" IsReadOnly="True" Text="Velg mappe for temp filer..."/>
-						<Button Grid.Column="1" Content="..." Click="BrowseTemp_Click" Margin="10,0,0,0" Width="40"/>
+						<Button Grid.Column="1" Content="..." Click="BrowseTemp_Click" Margin="10,0,0,0" Width="40" ToolTip.Tip="Bla gjennom og velg mappe for midlertidige filer"/>
 					</Grid>
 				</StackPanel>
 			</Border>
@@ -122,7 +122,7 @@
 							<TextBlock Text="Programversjon:" FontWeight="Bold"/>
 							<TextBlock x:Name="lblAppVersion" Text="Sjekker..." Foreground="{DynamicResource TextMuted}"/>
 						</StackPanel>
-						<Button x:Name="btnAppUpdate" Grid.Column="1" Content="Oppdater" Click="AppUpdate_Click" Width="100" IsEnabled="False"/>
+						<Button x:Name="btnAppUpdate" Grid.Column="1" Content="Oppdater" Click="AppUpdate_Click" Width="100" IsEnabled="False" ToolTip.Tip="Søk etter og installer nyeste versjon av NRK Nedlaster GUI"/>
 					</Grid>
 
 					<Separator Background="{DynamicResource BorderColor}" Margin="0,0,0,15"/>
@@ -136,7 +136,7 @@
 							<TextBlock Text="yt-dlp status:" FontWeight="Bold"/>
 							<TextBlock x:Name="lblYtDlpVersion" Text="Sjekker versjon..." Foreground="{DynamicResource TextMuted}"/>
 						</StackPanel>
-						<Button x:Name="btnYtDlpUpdate" Grid.Column="1" Content="Oppdater yt-dlp" Click="UpdateYtDlp_Click" Width="140" IsEnabled="False"/>
+						<Button x:Name="btnYtDlpUpdate" Grid.Column="1" Content="Oppdater yt-dlp" Click="UpdateYtDlp_Click" Width="140" IsEnabled="False" ToolTip.Tip="Søk etter og last ned nyeste versjon av yt-dlp"/>
 					</Grid>
 
 					<Grid>
@@ -148,7 +148,7 @@
 							<TextBlock Text="FFmpeg status:" FontWeight="Bold"/>
 							<TextBlock x:Name="lblFfmpegVersion" Text="Sjekker..." Foreground="{DynamicResource TextMuted}"/>
 						</StackPanel>
-						<Button x:Name="btnFfmpegUpdate" Grid.Column="1" Content="Oppdater FFmpeg" Click="GetFfmpeg_Click" Width="140" IsEnabled="False"/>
+						<Button x:Name="btnFfmpegUpdate" Grid.Column="1" Content="Oppdater FFmpeg" Click="GetFfmpeg_Click" Width="140" IsEnabled="False" ToolTip.Tip="Søk etter og last ned nyeste versjon av FFmpeg"/>
 					</Grid>
 				</StackPanel>
 			</Border>
@@ -174,8 +174,8 @@
                        Foreground="{DynamicResource TextMuted}" FontStyle="Italic" Margin="0,0,0,20"/>
 
 			<StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
-				<Button Content="Lagre" Click="Save_Click" Width="100" Margin="0,0,10,0"/>
-				<Button Content="Avbryt" Click="Cancel_Click" Width="100"/>
+				<Button Content="Lagre" Click="Save_Click" Width="100" Margin="0,0,10,0" ToolTip.Tip="Lagre endringene og lukk innstillinger"/>
+				<Button Content="Avbryt" Click="Cancel_Click" Width="100" ToolTip.Tip="Forkast endringer og lukk innstillinger"/>
 			</StackPanel>
 		</Grid>
 	</ScrollViewer>

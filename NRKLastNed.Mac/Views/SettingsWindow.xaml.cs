@@ -5,7 +5,8 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
-using NRKLastNed.Mac.Models;
+using NRKLastNed.Core.Models;
+using NRKLastNed.Core.Services;
 using NRKLastNed.Mac.Services;
 using System;
 using System.Collections.Generic;
@@ -21,9 +22,9 @@ namespace NRKLastNed.Mac.Views
         private AppUpdateService _appUpdateService;
         private FfmpegUpdateService _ffmpegUpdateService;
 
-        private AppUpdateService.AppUpdateInfo? _pendingAppUpdate;
-        private UpdateService.ToolUpdateInfo? _pendingYtDlpUpdate;
-        private FfmpegUpdateService.FfmpegUpdateInfo? _pendingFfmpegUpdate;
+        private AppUpdateInfo? _pendingAppUpdate;
+        private ToolUpdateInfo? _pendingYtDlpUpdate;
+        private FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
         public SettingsWindow()
         {
@@ -170,7 +171,13 @@ namespace NRKLastNed.Mac.Views
         {
             if (_pendingAppUpdate == null || !_pendingAppUpdate.IsNewVersionAvailable) return;
 
-            var result = await ShowMessageBoxAsync($"Vil du oppdatere til {_pendingAppUpdate.LatestVersion}?", "Oppdatering", MessageBoxType.Question);
+            string promptMessage = AppUpdateService.FormatUpdatePromptMessage(_pendingAppUpdate);
+
+            var result = await ShowMessageBoxAsync(
+                promptMessage,
+                $"Oppdatering tilgjengelig (v{_pendingAppUpdate.LatestVersion})",
+                MessageBoxType.Question);
+
             if (result == MessageBoxResult.Yes)
             {
                 btnAppUpdate.IsEnabled = false;
@@ -207,12 +214,28 @@ namespace NRKLastNed.Mac.Views
                     var progress = new Progress<string>(status => lblFfmpegVersion.Text = status);
                     try
                     {
-                        await _ffmpegUpdateService.UpdateFfmpegAsync(_pendingFfmpegUpdate, progress);
-                        await ShowMessageBoxAsync("FFmpeg er installert/oppdatert!", "Suksess", MessageBoxType.Information);
+                        var updateResult = await _ffmpegUpdateService.UpdateFfmpegAsync(_pendingFfmpegUpdate, progress);
+
+                        if (updateResult.ChecksumVerified)
+                        {
+                            await ShowMessageBoxAsync(
+                                $"FFmpeg er installert og oppdatert!\n\n" +
+                                $"✓ SHA-256 Hash kontrollert og verifisert:\n{updateResult.Sha256}\n\n" +
+                                $"Filens integritet og ekthet er bekreftet mot GitHub release checksums.",
+                                "FFmpeg verifisert",
+                                MessageBoxType.Information);
+                        }
+                        else
+                        {
+                            await ShowMessageBoxAsync(
+                                $"FFmpeg er installert og oppdatert!\n\nBeregnet SHA-256 Hash:\n{updateResult.Sha256}",
+                                "Oppdatering fullført",
+                                MessageBoxType.Information);
+                        }
                     }
                     catch (Exception ex)
                     {
-                        await ShowMessageBoxAsync($"Feil: {ex.Message}", "Feil", MessageBoxType.Error);
+                        await ShowMessageBoxAsync($"Feil under oppdatering: {ex.Message}", "Feil", MessageBoxType.Error);
                     }
                 }
             }
@@ -311,23 +334,23 @@ namespace NRKLastNed.Mac.Views
         private void Save_Click(object sender, RoutedEventArgs e)
         {
             // NY: Lagre TV/Radio-mapper
-            _settings.TvOutputFolder = txtTvOutput.Text;
-            _settings.RadioOutputFolder = txtRadioOutput.Text;
+            _settings.TvOutputFolder = txtTvOutput.Text ?? "";
+            _settings.RadioOutputFolder = txtRadioOutput.Text ?? "";
             _settings.UseSameFolderForBoth = chkUseSameFolder.IsChecked == true;
 
             // Legacy - for bakoverkompatibilitet
-            _settings.OutputFolder = txtTvOutput.Text;
+            _settings.OutputFolder = txtTvOutput.Text ?? "";
 
-            _settings.TempFolder = txtTemp.Text;
+            _settings.TempFolder = txtTemp.Text ?? "";
             _settings.UseSystemTemp = chkUseSystemTemp.IsChecked == true;
 
-            if (cmbResolution.SelectedItem != null)
-                _settings.DefaultResolution = cmbResolution.SelectedItem.ToString();
+            if (cmbResolution.SelectedItem is string resolution)
+                _settings.DefaultResolution = resolution;
 
-            if (cmbTheme.SelectedItem != null)
+            if (cmbTheme.SelectedItem is string theme)
             {
-                _settings.AppTheme = cmbTheme.SelectedItem.ToString();
-                ThemeService.ApplyTheme(_settings.AppTheme);
+                _settings.AppTheme = theme;
+                ThemeService.ApplyTheme(theme);
             }
 
             _settings.EnableLogging = chkEnableLog.IsChecked == true;

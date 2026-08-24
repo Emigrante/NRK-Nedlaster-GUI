@@ -362,30 +362,149 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Ignorer Tools mappen (ffmpeg og yt-dlp)
+# ==========================================
+# Prosjektspesifikke og lokale/interne filer
+# ==========================================
+
+# Eksterne verktøy og binærfiler (ffmpeg, yt-dlp, ffprobe etc.)
 Tools/
 **/Tools/
+**/Tools/**
 *.exe
+yt-dlp
+yt-dlp_macos
+yt-dlp_linux
+ffmpeg
+ffmpeg_macos
+ffmpeg_linux
+ffprobe
+ffprobe_macos
+ffprobe_linux
+atomicparsley
+AtomicParsley
+*.dylib
+*.so
 
-# Inno Setup 6 og installasjonsfiler
+# Inno Setup, installasjonspakker og arkivfiler
 *.iss
 *_Setup.exe
 *Setup*.exe
+[Oo]utput/
+[Oo]utputs/
+_Output/
+*.msi
+*.msix
+*.msixbundle
+*.appinstaller
+*.dmg
+*.pkg
+*.app/
+*.zip
+*.7z
+*.tar.gz
+*.rar
 
 # Interne Benchmark- og testprosjekter
 BenchmarkSuite1/
 BenchmarkDotNet.Artifacts/
+**/BenchmarkDotNet.Artifacts/
+[Tt]est[Rr]esults/
+**/[Tt]est[Rr]esults/
+*.trx
 
-# Lokale bygg- og publiseringsskript
+# Lokale bygg-, publiseringsskript og mapper
 build-release.ps1
 publish/
+**/publish/
+**/Publish/
+*.ps1~
+*.sh~
 
-# macOS og Windows systemfiler
-.DS_Store
-Thumbs.db
-ehthumbs.db
-
-# Lokale logger og innstillinger
-Logs/
+# Lokale logger og innstillinger / hemmeligheter
+[Ll]ogs/
+**/[Ll]ogs/
 *.log
 settings.json
+**/settings.json
+LocalSettings.json
+secrets.json
+**/secrets.json
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+.env
+.env.*
+.env.local
+
+# Nedlastet media og midlertidige strømme-/video-/lydfiler
+[Dd]ownloads/
+**/[Dd]ownloads/
+[Nn]edlastinger/
+**/[Nn]edlastinger/
+*.mp4
+*.mkv
+*.avi
+*.webm
+*.mov
+*.mp3
+*.m4a
+*.aac
+*.wav
+*.flac
+*.opus
+*.ogg
+*.srt
+*.vtt
+*.ass
+*.ttml
+*.part
+*.ytdl
+*.aria2
+*.ts
+
+# Editor- og IDE-konfigurasjoner (VS Code, JetBrains Rider, etc.)
+.vscode/
+*.code-workspace
+.idea/
+*.sln.iml
+*.iml
+.fleet/
+.zed/
+*.sublime-project
+*.sublime-workspace
+*.DotSettings
+*.bak
+*.orig
+*.rej
+
+# macOS, Linux og Windows systemfiler
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon
+desktop.ini
+Thumbs.db
+ehthumbs.db
+ehthumbs_vista.db
+$RECYCLE.BIN/
+
+# AI-assistent instruksjoner, verktøy og logger (kun lokalt/internt bruk)
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+copilot-instructions.md
+.agents/
+.gemini/
+.claude/
+.cursor/
+.cursorrules
+.windsurf/
+.windsurfrules
+.copilot/
+.aider*
+.cline/
+.roomodes
+.system_generated/
+*.prompt.md
