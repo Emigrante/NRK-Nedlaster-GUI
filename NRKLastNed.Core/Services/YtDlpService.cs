@@ -390,17 +390,55 @@ namespace NRKLastNed.Core.Services
                 seasonEpisodeStr = $"S{seasonNum:D2}E{episodeNum:D2}";
             }
 
+            bool itemIsTelevision = isTelevision;
+            if (!string.IsNullOrEmpty(url))
+            {
+                if (url.Contains("radio.nrk", StringComparison.OrdinalIgnoreCase) ||
+                    url.Contains("nrk.no/radio", StringComparison.OrdinalIgnoreCase) ||
+                    url.Contains("nrk.no/podkast", StringComparison.OrdinalIgnoreCase) ||
+                    url.Contains("podkast.nrk", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemIsTelevision = false;
+                }
+            }
+
+            if (root.TryGetProperty("playlist_webpage_url", out var pwProp))
+            {
+                string? pwUrl = pwProp.GetString();
+                if (!string.IsNullOrEmpty(pwUrl) && (pwUrl.Contains("radio.nrk", StringComparison.OrdinalIgnoreCase) || pwUrl.Contains("/podkast", StringComparison.OrdinalIgnoreCase)))
+                {
+                    itemIsTelevision = false;
+                }
+            }
+
+            if (root.TryGetProperty("extractor", out var exProp))
+            {
+                string? extractor = exProp.GetString();
+                if (extractor != null && extractor.Contains("radio", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemIsTelevision = false;
+                }
+            }
+
+            if (root.TryGetProperty("vcodec", out var vcProp) && vcProp.GetString() == "none" &&
+                root.TryGetProperty("ext", out var extProp) && extProp.GetString() == "mp3")
+            {
+                itemIsTelevision = false;
+            }
+
+            string detectedLang = DetectLanguage(root);
+
             var item = new DownloadItem
             {
                 Url = url,
                 Title = formattedTitle,
                 SeasonEpisode = seasonEpisodeStr,
-                IsTelevision = isTelevision,
-                SelectedResolution = isTelevision ? _settings.DefaultResolution : "best"
+                IsTelevision = itemIsTelevision,
+                SelectedResolution = itemIsTelevision ? _settings.DefaultResolution : "best",
+                SelectedLanguage = detectedLang
             };
 
             var resolutions = new HashSet<string>();
-            var languages = new HashSet<string>();
 
             if (root.TryGetProperty("formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
             {
@@ -409,16 +447,6 @@ namespace NRKLastNed.Core.Services
                     if (f.TryGetProperty("height", out var hProp) && hProp.TryGetInt32(out int h) && h > 0)
                     {
                         resolutions.Add(h.ToString());
-                    }
-
-                    if (f.TryGetProperty("language", out var lProp))
-                    {
-                        string? lang = lProp.GetString();
-                        if (!string.IsNullOrEmpty(lang))
-                        {
-                            string mapped = MapLanguageCode(lang);
-                            if (!string.IsNullOrEmpty(mapped)) languages.Add(mapped);
-                        }
                     }
                 }
             }
@@ -451,16 +479,94 @@ namespace NRKLastNed.Core.Services
                 item.SelectedResolution = "best";
             }
 
-            if (languages.Count > 0)
+            return item;
+        }
+
+        private string DetectLanguage(JsonElement root)
+        {
+            // 1. Sjekk formats-array for audio-spor (language, format_note, format_id)
+            if (root.TryGetProperty("formats", out var formats) && formats.ValueKind == JsonValueKind.Array)
             {
-                string? detected = languages.FirstOrDefault(l => item.AvailableLanguages.Contains(l));
-                if (!string.IsNullOrEmpty(detected))
+                foreach (var f in formats.EnumerateArray())
                 {
-                    item.SelectedLanguage = detected;
+                    if (f.TryGetProperty("language", out var fLangProp))
+                    {
+                        string? flang = fLangProp.GetString();
+                        if (!string.IsNullOrEmpty(flang))
+                        {
+                            string mapped = MapLanguageCode(flang);
+                            if (!string.IsNullOrEmpty(mapped)) return mapped;
+                        }
+                    }
+
+                    if (f.TryGetProperty("format_note", out var fnProp))
+                    {
+                        string? note = fnProp.GetString();
+                        if (!string.IsNullOrEmpty(note))
+                        {
+                            string mapped = MapLanguageText(note);
+                            if (!string.IsNullOrEmpty(mapped)) return mapped;
+                        }
+                    }
+
+                    if (f.TryGetProperty("format_id", out var fidProp))
+                    {
+                        string? fid = fidProp.GetString();
+                        if (!string.IsNullOrEmpty(fid))
+                        {
+                            string mapped = MapLanguageText(fid);
+                            if (!string.IsNullOrEmpty(mapped)) return mapped;
+                        }
+                    }
                 }
             }
 
-            return item;
+            // 2. Sjekk direkte 'language'-egenskap på rot-objektet
+            if (root.TryGetProperty("language", out var langProp))
+            {
+                string? lang = langProp.GetString();
+                if (!string.IsNullOrEmpty(lang))
+                {
+                    string mapped = MapLanguageCode(lang);
+                    if (!string.IsNullOrEmpty(mapped)) return mapped;
+                }
+            }
+
+            // 3. Sjekk tittel, serie og beskrivelse for opprinnelsesland/språk
+            string description = root.TryGetProperty("description", out var dProp) ? (dProp.GetString() ?? "") : "";
+            string title = root.TryGetProperty("title", out var tProp) ? (tProp.GetString() ?? "") : "";
+            string series = root.TryGetProperty("series", out var sProp) ? (sProp.GetString() ?? "") : "";
+            string combinedText = $"{series} {title} {description}".ToLowerInvariant();
+
+            if (combinedText.Contains("svensk serie") || combinedText.Contains("svensk drama") || combinedText.Contains("svensk krim") || combinedText.Contains("fra sverige") || combinedText.Contains("svensk humordrama"))
+            {
+                return "Svensk";
+            }
+            if (combinedText.Contains("dansk serie") || combinedText.Contains("dansk drama") || combinedText.Contains("dansk krim") || combinedText.Contains("fra danmark"))
+            {
+                return "Dansk";
+            }
+            if (combinedText.Contains("britisk") || combinedText.Contains("amerikansk") || combinedText.Contains("engelsk") || combinedText.Contains("australsk") || combinedText.Contains("fra usa") || combinedText.Contains("fra uk") || combinedText.Contains("fra storbritannia"))
+            {
+                return "Engelsk";
+            }
+
+            // 4. Standard er "Norsk"
+            return "Norsk";
+        }
+
+        private string MapLanguageText(string text)
+        {
+            string lower = text.ToLowerInvariant();
+            if (lower.Contains("norsk") || lower.Contains("norwegian") || lower.Contains("bokmål") || lower.Contains("nynorsk") || lower.Contains("-nob") || lower.Contains("-nor"))
+                return "Norsk";
+            if (lower.Contains("svensk") || lower.Contains("swedish") || lower.Contains("-swe"))
+                return "Svensk";
+            if (lower.Contains("dansk") || lower.Contains("danish") || lower.Contains("-dan"))
+                return "Dansk";
+            if (lower.Contains("engelsk") || lower.Contains("english") || lower.Contains("-eng") || lower.Contains("-en"))
+                return "Engelsk";
+            return "";
         }
 
         private string CleanEpisodeTitle(string rawTitle, string seriesName)
@@ -480,19 +586,22 @@ namespace NRKLastNed.Core.Services
 
         private string MapLanguageCode(string code)
         {
-            return code.ToLowerInvariant() switch
+            return code.ToLowerInvariant().Trim() switch
             {
                 "nob" or "nor" or "no" or "nb" or "nn" => "Norsk",
                 "swe" or "se" or "sv" => "Svensk",
                 "dan" or "dk" or "da" => "Dansk",
-                "eng" or "en" or "gb" or "us" => "Engelsk",
-                _ => ""
+                "eng" or "en" or "gb" or "us" or "uk" => "Engelsk",
+                _ => MapLanguageText(code)
             };
         }
 
         private bool DetectContentType(string url)
         {
-            if (url.Contains("radio.nrk", StringComparison.OrdinalIgnoreCase))
+            if (url.Contains("radio.nrk", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("nrk.no/radio", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("nrk.no/podkast", StringComparison.OrdinalIgnoreCase) ||
+                url.Contains("podkast.nrk", StringComparison.OrdinalIgnoreCase))
                 return false;
 
             return true;

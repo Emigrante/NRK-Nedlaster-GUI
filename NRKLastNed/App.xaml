@@ -36,6 +36,10 @@
                 <Trigger Property="IsChecked" Value="true">
                     <Setter TargetName="Border" Property="Background" Value="{DynamicResource BorderColor}" />
                 </Trigger>
+                <Trigger Property="IsEnabled" Value="false">
+                    <Setter TargetName="Border" Property="Opacity" Value="0.35" />
+                    <Setter TargetName="Arrow" Property="Opacity" Value="0.35" />
+                </Trigger>
             </ControlTemplate.Triggers>
         </ControlTemplate>
 
@@ -72,9 +76,21 @@
                                 </Grid>
                             </Popup>
                         </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ToggleButton" Property="Opacity" Value="0.35"/>
+                                <Setter TargetName="ContentSite" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- COMBOBOX ITEM STIL -->
