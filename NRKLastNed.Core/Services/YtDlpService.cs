@@ -414,7 +414,11 @@ namespace NRKLastNed.Core.Services
                     if (f.TryGetProperty("language", out var lProp))
                     {
                         string? lang = lProp.GetString();
-                        if (!string.IsNullOrEmpty(lang)) languages.Add(MapLanguageCode(lang));
+                        if (!string.IsNullOrEmpty(lang))
+                        {
+                            string mapped = MapLanguageCode(lang);
+                            if (!string.IsNullOrEmpty(mapped)) languages.Add(mapped);
+                        }
                     }
                 }
             }
@@ -449,9 +453,11 @@ namespace NRKLastNed.Core.Services
 
             if (languages.Count > 0)
             {
-                item.AvailableLanguages = new System.Collections.ObjectModel.ObservableCollection<string>(languages);
-                if (item.AvailableLanguages.Contains("Norsk")) item.SelectedLanguage = "Norsk";
-                else item.SelectedLanguage = item.AvailableLanguages[0];
+                string? detected = languages.FirstOrDefault(l => item.AvailableLanguages.Contains(l));
+                if (!string.IsNullOrEmpty(detected))
+                {
+                    item.SelectedLanguage = detected;
+                }
             }
 
             return item;
@@ -476,11 +482,11 @@ namespace NRKLastNed.Core.Services
         {
             return code.ToLowerInvariant() switch
             {
-                "nob" or "nor" or "no" => "Norsk",
+                "nob" or "nor" or "no" or "nb" or "nn" => "Norsk",
                 "swe" or "se" or "sv" => "Svensk",
                 "dan" or "dk" or "da" => "Dansk",
                 "eng" or "en" or "gb" or "us" => "Engelsk",
-                _ => code
+                _ => ""
             };
         }
 
@@ -494,7 +500,14 @@ namespace NRKLastNed.Core.Services
 
         private string GetLanguageCode(string languageName)
         {
-            return languageName switch { "Norsk" => "nob", "Svensk" => "swe", "Dansk" => "dan", "Engelsk" => "eng", _ => "und" };
+            return languageName switch
+            {
+                "Norsk" => "nob",
+                "Svensk" => "swe",
+                "Dansk" or "Danske" => "dan",
+                "Engelsk" => "eng",
+                _ => "nob"
+            };
         }
 
         private static string SanitizeFileName(string name)

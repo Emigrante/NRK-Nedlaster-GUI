@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
@@ -78,8 +78,7 @@ namespace NRKLastNed.Core.Models
                 "Norsk",
                 "Svensk",
                 "Dansk",
-                "Engelsk",
-                "Ukjent"
+                "Engelsk"
             };
         }
 
