@@ -69,7 +69,7 @@
                   AutoGenerateColumns="False" Background="{DynamicResource BgLight}" 
                   HeadersVisibility="Column" BorderThickness="0"
                   RowBackground="{DynamicResource BgLight}" Foreground="{DynamicResource TextColor}"
-                  GridLinesVisibility="None" CanUserAddRows="False">
+                  GridLinesVisibility="Vertical" VerticalGridLinesBrush="{DynamicResource BorderColor}" CanUserAddRows="False">
 
             <DataGrid.ContextMenu>
                 <ContextMenu>
@@ -129,7 +129,9 @@
                     <Setter Property="Background" Value="{DynamicResource BgInput}"/>
                     <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
                     <Setter Property="Padding" Value="10,5"/>
-                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
                 </Style>
             </DataGrid.ColumnHeaderStyle>
         </DataGrid>
