@@ -20,7 +20,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="NRK NEDLASTER GUI" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" VerticalAlignment="Top"/>
+        <TextBlock Grid.Row="0" Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="18" FontWeight="Medium" Foreground="{DynamicResource TextColor}" Opacity="0.8" VerticalAlignment="Top"/>
 
         <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
             <TextBlock Text="{Binding UpdateNotificationText}" 
@@ -43,7 +43,7 @@
         </StackPanel>
 
         <!-- URL-input -->
-        <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="10" Padding="15" Margin="0,0,0,20">
+        <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="8" Padding="15" Margin="0,0,0,20">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -55,14 +55,12 @@
 
                 <TextBox Grid.Column="1" 
                          Text="{Binding InputUrl}" 
-                         FontSize="14" 
                          Background="{DynamicResource BgInput}"
                          BorderBrush="{DynamicResource BorderColor}"
                          BorderThickness="1"
-                         VerticalContentAlignment="Center"
-                         Padding="8,5"/>
+                         VerticalContentAlignment="Center"/>
 
-                <Button Grid.Column="2" Content="LEGG TIL" Command="{Binding AddCommand}" Margin="10,0,0,0" Width="100" ToolTip="Henter informasjon og legger til video eller lyd fra URL-en i listen"/>
+                <Button Grid.Column="2" Content="Legg til" Command="{Binding AddCommand}" Margin="10,0,0,0" Width="80" ToolTip="Henter informasjon og legger til video eller lyd fra URL-en i listen"/>
             </Grid>
         </Border>
 
@@ -148,12 +146,12 @@
                 <ProgressBar Value="{Binding TotalProgress}" IsIndeterminate="{Binding IsProgressIndeterminate}" Height="5" Margin="0,5,10,0" Background="#333" BorderThickness="0" Foreground="{DynamicResource AccentColor}"/>
             </StackPanel>
 
-            <Button Grid.Column="1" Content="{Binding StartButtonText}" Command="{Binding DownloadCommand}" FontSize="16" Padding="30,10">
+            <Button Grid.Column="1" Content="{Binding StartButtonText}" Command="{Binding DownloadCommand}" Width="140">
                 <Button.Style>
                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                         <Setter Property="ToolTip" Value="Starter nedlasting av valgte elementer i listen"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding StartButtonText}" Value="AVBRYT">
+                            <DataTrigger Binding="{Binding StartButtonText}" Value="Avbryt">
                                 <Setter Property="Background" Value="#FF4444"/>
                                 <Setter Property="Foreground" Value="White"/>
                                 <Setter Property="ToolTip" Value="Avbryter pågående nedlasting"/>

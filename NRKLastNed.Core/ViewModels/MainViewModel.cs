@@ -33,7 +33,7 @@ namespace NRKLastNed.Core.ViewModels
         private bool _isAnalyzing;
         private CancellationTokenSource? _cts;
         private CancellationTokenSource? _analysisCts;
-        private string _startButtonText = "START NEDLASTING";
+        private string _startButtonText = "Start nedlasting";
 
         private bool _isTelevision = true;
         private bool _isRadio = false;
@@ -200,7 +200,7 @@ namespace NRKLastNed.Core.ViewModels
 
         private void UpdateStartButtonText()
         {
-            StartButtonText = (_isDownloading || _isAnalyzing) ? "AVBRYT" : "START NEDLASTING";
+            StartButtonText = (_isDownloading || _isAnalyzing) ? "Avbryt" : "Start nedlasting";
         }
 
         public string StartButtonText

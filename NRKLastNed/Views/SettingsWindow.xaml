@@ -22,7 +22,10 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="INNSTILLINGER" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" Margin="0,0,0,20"/>
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <TextBlock Text="INNSTILLINGER" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentColor}" VerticalAlignment="Center"/>
+                <Button Content="Lukk" Click="Close_Click" Width="80" HorizontalAlignment="Right" ToolTip="Lukk innstillinger"/>
+            </Grid>
 
             <!-- TV/Radio Nedlastingsmapper -->
             <GroupBox Grid.Row="1" Header="Nedlastingsmapper" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
@@ -30,7 +33,7 @@
                     <!-- Checkbox for delt mappe -->
                     <CheckBox x:Name="chkUseSameFolder" Content="Bruk samme mappe for både TV og Radio" 
                               Foreground="{DynamicResource TextColor}" Margin="0,0,0,15" 
-                              Checked="chkUseSameFolder_Checked" Unchecked="chkUseSameFolder_Unchecked"/>
+                              Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"/>
 
                     <!-- TV-mappe -->
                     <TextBlock Text="TV-mappe:" Margin="0,0,0,5"/>
@@ -39,7 +42,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="txtTvOutput" IsReadOnly="True"/>
+                        <TextBox x:Name="txtTvOutput" IsReadOnly="True" TextChanged="LiveSave_Trigger"/>
                         <Button Grid.Column="1" Content="..." Click="BrowseTvOutput_Click" Margin="10,0,0,0" Width="40" ToolTip="Bla gjennom og velg lagringsmappe for TV-programmer"/>
                     </Grid>
 
@@ -50,7 +53,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="txtRadioOutput" IsReadOnly="True"/>
+                        <TextBox x:Name="txtRadioOutput" IsReadOnly="True" TextChanged="LiveSave_Trigger"/>
                         <Button Grid.Column="1" Content="..." Click="BrowseRadioOutput_Click" Margin="10,0,0,0" Width="40" ToolTip="Bla gjennom og velg lagringsmappe for radioprogrammer"/>
                     </Grid>
                 </StackPanel>
@@ -60,14 +63,14 @@
                 <StackPanel Margin="10">
                     <CheckBox x:Name="chkUseSystemTemp" Content="Bruk standard Windows temp mappe" 
                               Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" 
-                              Checked="chkUseSystemTemp_Checked" Unchecked="chkUseSystemTemp_Unchecked"/>
+                              Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"/>
 
                     <Grid x:Name="pnlCustomTemp" IsEnabled="False">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="txtTemp" IsReadOnly="True" Text="Velg mappe for temp filer..."/>
+                        <TextBox x:Name="txtTemp" IsReadOnly="True" Text="Velg mappe for temp filer..." TextChanged="LiveSave_Trigger"/>
                         <Button Grid.Column="1" Content="..." Click="BrowseTemp_Click" Margin="10,0,0,0" Width="40" ToolTip="Bla gjennom og velg mappe for midlertidige filer"/>
                     </Grid>
                 </StackPanel>
@@ -83,12 +86,12 @@
 
                     <StackPanel Grid.Column="0">
                         <TextBlock Text="Standard oppløsning:" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="cmbResolution"/>
+                        <ComboBox x:Name="cmbResolution" SelectionChanged="LiveSave_Trigger"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
                         <TextBlock Text="Fargetema:" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="cmbTheme"/>
+                        <ComboBox x:Name="cmbTheme" SelectionChanged="CmbTheme_SelectionChanged"/>
                     </StackPanel>
                 </Grid>
             </GroupBox>
@@ -138,11 +141,11 @@
 
             <GroupBox Grid.Row="5" Header="Logging" Foreground="{DynamicResource AccentColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
                 <StackPanel Margin="10">
-                    <CheckBox x:Name="chkEnableLog" Content="Aktiver Logging til fil" Foreground="{DynamicResource TextColor}" Margin="0,0,0,10"/>
+                    <CheckBox x:Name="chkEnableLog" Content="Aktiver Logging til fil" Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"/>
 
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Loggnivå:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox x:Name="cmbLogLevel" Width="150"/>
+                        <ComboBox x:Name="cmbLogLevel" Width="150" SelectionChanged="LiveSave_Trigger"/>
                     </StackPanel>
 
                     <TextBlock Text="Loggfiler lagres i mappen 'Logs' der programmet kjører." Foreground="{DynamicResource TextMuted}" FontSize="10" Margin="0,5,0,0"/>
@@ -150,11 +153,6 @@
             </GroupBox>
 
             <TextBlock Grid.Row="7" Text="INFO: yt-dlp.exe og ffmpeg.exe må ligge i 'Tools' mappen." Foreground="{DynamicResource TextMuted}" FontStyle="Italic" Margin="0,0,0,20"/>
-
-            <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Lagre" Click="Save_Click" Width="100" Margin="0,0,10,0" ToolTip="Lagre endringene og lukk innstillinger"/>
-                <Button Content="Avbryt" Click="Cancel_Click" Background="{DynamicResource BorderColor}" Width="100" ToolTip="Forkast endringer og lukk innstillinger"/>
-            </StackPanel>
         </Grid>
     </ScrollViewer>
 </Window>

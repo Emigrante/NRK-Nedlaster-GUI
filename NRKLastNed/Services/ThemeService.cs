@@ -13,7 +13,7 @@ namespace NRKLastNed.Services
             {
                 ApplySystemTheme();
             }
-            else if (themeName == "Light")
+            else if (themeName == "Light" || themeName == "Lys")
             {
                 ApplyLightTheme();
             }
@@ -49,27 +49,27 @@ namespace NRKLastNed.Services
 
         private static void ApplyDarkTheme()
         {
-            SetResource("BgDark", (Color)ColorConverter.ConvertFromString("#1E1E24"));
-            SetResource("BgLight", (Color)ColorConverter.ConvertFromString("#2D2D35"));
-            SetResource("BgInput", (Color)ColorConverter.ConvertFromString("#1E1E24"));
-            SetResource("AccentColor", (Color)ColorConverter.ConvertFromString("#00E5FF")); // Cyan
-            SetResource("AccentDark", (Color)ColorConverter.ConvertFromString("#00B8D4"));
+            SetResource("BgDark", (Color)ColorConverter.ConvertFromString("#202020"));
+            SetResource("BgLight", (Color)ColorConverter.ConvertFromString("#2D2D2D"));
+            SetResource("BgInput", (Color)ColorConverter.ConvertFromString("#333333"));
+            SetResource("AccentColor", (Color)ColorConverter.ConvertFromString("#0078D7")); // Windows Blue
+            SetResource("AccentDark", (Color)ColorConverter.ConvertFromString("#005A9E"));
             SetResource("TextColor", Colors.White);
-            SetResource("TextMuted", (Color)ColorConverter.ConvertFromString("#AAAAAA"));
-            SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#555555"));
-            SetResource("ButtonText", Colors.Black);
+            SetResource("TextMuted", (Color)ColorConverter.ConvertFromString("#999999"));
+            SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#454545"));
+            SetResource("ButtonText", Colors.White);
         }
 
         private static void ApplyLightTheme()
         {
-            SetResource("BgDark", (Color)ColorConverter.ConvertFromString("#F5F5F5"));
+            SetResource("BgDark", (Color)ColorConverter.ConvertFromString("#F3F3F3"));
             SetResource("BgLight", (Color)ColorConverter.ConvertFromString("#FFFFFF"));
             SetResource("BgInput", (Color)ColorConverter.ConvertFromString("#FFFFFF"));
-            SetResource("AccentColor", (Color)ColorConverter.ConvertFromString("#00B8D4")); // Mørkere cyan
-            SetResource("AccentDark", (Color)ColorConverter.ConvertFromString("#0097A7"));
+            SetResource("AccentColor", (Color)ColorConverter.ConvertFromString("#0078D7")); // Windows Blue
+            SetResource("AccentDark", (Color)ColorConverter.ConvertFromString("#005A9E"));
             SetResource("TextColor", Colors.Black);
             SetResource("TextMuted", (Color)ColorConverter.ConvertFromString("#666666"));
-            SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#CCCCCC"));
+            SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#E5E5E5"));
             SetResource("ButtonText", Colors.White);
         }
 

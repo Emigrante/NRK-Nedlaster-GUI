@@ -12,6 +12,9 @@ namespace NRKLastNed.Views
             InitializeComponent();
             _vm = new MainViewModel();
             DataContext = _vm;
+
+            string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(2) ?? "1.0";
+            this.Title = $"NRK Nedlaster v{version}";
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)

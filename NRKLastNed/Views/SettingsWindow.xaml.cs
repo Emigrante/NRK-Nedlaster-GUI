@@ -22,6 +22,8 @@ namespace NRKLastNed.Views
         private ToolUpdateInfo? _pendingYtDlpUpdate;
         private FfmpegUpdateInfo? _pendingFfmpegUpdate;
 
+        private bool _isInitializing = true;
+
         public SettingsWindow()
         {
             InitializeComponent();
@@ -38,7 +40,7 @@ namespace NRKLastNed.Views
         private void InitializeUI()
         {
             cmbResolution.ItemsSource = new List<string> { "2160", "1440", "1080", "720", "540", "480", "best" };
-            cmbTheme.ItemsSource = new List<string> { "System", "Light", "Dark" };
+            cmbTheme.ItemsSource = new List<string> { "System", "Lys", "Mørk" };
             cmbLogLevel.ItemsSource = Enum.GetValues(typeof(LogLevel));
 
             // NY: Initialiser TV/Radio-mapper
@@ -54,10 +56,17 @@ namespace NRKLastNed.Views
             pnlCustomTemp.IsEnabled = !_settings.UseSystemTemp;
 
             cmbResolution.SelectedItem = _settings.DefaultResolution;
-            cmbTheme.SelectedItem = _settings.AppTheme;
+            
+            // Map saved theme to Lys/Mørk
+            string loadedTheme = _settings.AppTheme;
+            if (loadedTheme == "Light") loadedTheme = "Lys";
+            if (loadedTheme == "Dark") loadedTheme = "Mørk";
+            cmbTheme.SelectedItem = loadedTheme;
 
             chkEnableLog.IsChecked = _settings.EnableLogging;
             cmbLogLevel.SelectedItem = _settings.LogLevel;
+            
+            _isInitializing = false;
         }
 
         private void UpdateRadioFolderVisibility()
@@ -263,39 +272,46 @@ namespace NRKLastNed.Views
         private void chkUseSystemTemp_Checked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = false;
         private void chkUseSystemTemp_Unchecked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = true;
 
-        private void Save_Click(object sender, RoutedEventArgs e)
+        private void LiveSave_Trigger(object sender, RoutedEventArgs e)
         {
-            // NY: Lagre TV/Radio-mapper
+            if (_isInitializing) return;
+            SaveSettingsLive();
+        }
+
+        private void CmbTheme_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            
+            if (cmbTheme.SelectedItem is string theme)
+            {
+                _settings.AppTheme = theme;
+                ThemeService.ApplyTheme(theme);
+            }
+            
+            SaveSettingsLive();
+        }
+
+        private void SaveSettingsLive()
+        {
             _settings.TvOutputFolder = txtTvOutput.Text;
             _settings.RadioOutputFolder = txtRadioOutput.Text;
             _settings.UseSameFolderForBoth = chkUseSameFolder.IsChecked == true;
-
-            // Legacy - for bakoverkompatibilitet
-            _settings.OutputFolder = txtTvOutput.Text;
-
+            _settings.OutputFolder = txtTvOutput.Text; // Legacy
             _settings.TempFolder = txtTemp.Text;
             _settings.UseSystemTemp = chkUseSystemTemp.IsChecked == true;
 
             if (cmbResolution.SelectedItem is string resolution)
                 _settings.DefaultResolution = resolution;
 
-            if (cmbTheme.SelectedItem is string theme)
-            {
-                _settings.AppTheme = theme;
-                ThemeService.ApplyTheme(theme);
-            }
-
             _settings.EnableLogging = chkEnableLog.IsChecked == true;
             if (cmbLogLevel.SelectedItem is LogLevel level) _settings.LogLevel = level;
 
             AppSettings.Save(_settings);
-            DialogResult = true;
-            Close();
         }
 
-        private void Cancel_Click(object sender, RoutedEventArgs e)
+        private void Close_Click(object sender, RoutedEventArgs e)
         {
-            DialogResult = false;
+            DialogResult = true;
             Close();
         }
     }

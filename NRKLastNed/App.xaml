@@ -4,15 +4,15 @@
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
         <!-- Standard farger (Startverdier) -->
-        <SolidColorBrush x:Key="BgDark" Color="#1E1E24"/>
-        <SolidColorBrush x:Key="BgLight" Color="#2D2D35"/>
-        <SolidColorBrush x:Key="BgInput" Color="#1E1E24"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#00E5FF"/>
-        <SolidColorBrush x:Key="AccentDark" Color="#00B8D4"/>
+        <SolidColorBrush x:Key="BgDark" Color="#202020"/>
+        <SolidColorBrush x:Key="BgLight" Color="#2D2D2D"/>
+        <SolidColorBrush x:Key="BgInput" Color="#333333"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#0078D7"/>
+        <SolidColorBrush x:Key="AccentDark" Color="#005A9E"/>
         <SolidColorBrush x:Key="TextColor" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#AAAAAA"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#555555"/>
-        <SolidColorBrush x:Key="ButtonText" Color="Black"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#999999"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#454545"/>
+        <SolidColorBrush x:Key="ButtonText" Color="#FFFFFF"/>
 
         <!-- PILKNAPP STIL -->
         <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
@@ -21,7 +21,7 @@
                     <ColumnDefinition />
                     <ColumnDefinition Width="20" />
                 </Grid.ColumnDefinitions>
-                <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="2"
+                <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="4"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
                         BorderThickness="{TemplateBinding BorderThickness}" />
@@ -123,14 +123,14 @@
         <Style TargetType="Button">
             <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
             <Setter Property="Foreground" Value="{DynamicResource ButtonText}"/>
-            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="15,8"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="ToolTipService.ShowOnDisabled" Value="True"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="5" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -196,7 +196,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="3" Padding="{TemplateBinding Padding}"
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}"
                                 BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <ScrollViewer x:Name="PART_ContentHost"/>
                         </Border>
