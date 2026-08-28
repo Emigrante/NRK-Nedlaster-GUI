@@ -21,6 +21,9 @@ namespace NRKLastNed.Core.ViewModels
         private readonly IDialogService? _dialogService;
         private readonly AppUpdateService _appUpdateService;
 
+        private readonly UpdateService _ytDlpUpdateService;
+        private readonly FfmpegUpdateService _ffmpegUpdateService;
+
         private string _inputUrl = "";
         private ObservableCollection<DownloadItem> _downloadItems = new ObservableCollection<DownloadItem>();
         private string _statusMessage = "";
@@ -41,6 +44,20 @@ namespace NRKLastNed.Core.ViewModels
         private string _updateNotificationText = "";
         private AppUpdateInfo? _pendingAppUpdate;
 
+        private bool _hasAnyUpdate;
+        public bool HasAnyUpdate
+        {
+            get => _hasAnyUpdate;
+            set { _hasAnyUpdate = value; OnPropertyChanged(); }
+        }
+
+        private string _updateTooltipText = "";
+        public string UpdateTooltipText
+        {
+            get => _updateTooltipText;
+            set { _updateTooltipText = value; OnPropertyChanged(); }
+        }
+
         private readonly PropertyBatcher _progressBatcher = new PropertyBatcher(debounceMs: 50);
 
         public MainViewModel(IPlatformService? platform = null, IDialogService? dialogService = null)
@@ -50,6 +67,8 @@ namespace NRKLastNed.Core.ViewModels
             _settings = AppSettings.Load();
             _service = new YtDlpService(_settings, _platform);
             _appUpdateService = new AppUpdateService(_platform, _dialogService);
+            _ytDlpUpdateService = new UpdateService(_platform);
+            _ffmpegUpdateService = new FfmpegUpdateService(_platform);
 
             DownloadItems = new SuspendableObservableCollection<DownloadItem>();
 
@@ -227,11 +246,45 @@ namespace NRKLastNed.Core.ViewModels
         {
             try
             {
-                var updateInfo = await _appUpdateService.CheckForAppUpdatesAsync();
-                if (updateInfo != null && updateInfo.IsNewVersionAvailable)
+                var appUpdateTask = _appUpdateService.CheckForAppUpdatesAsync();
+                var ytdlpUpdateTask = _ytDlpUpdateService.CheckForYtDlpUpdateAsync();
+                var ffmpegUpdateTask = _ffmpegUpdateService.CheckForUpdatesAsync();
+
+                await Task.WhenAll(appUpdateTask, ytdlpUpdateTask, ffmpegUpdateTask);
+
+                var appUpdateInfo = await appUpdateTask;
+                var ytdlpUpdateInfo = await ytdlpUpdateTask;
+                var ffmpegUpdateInfo = await ffmpegUpdateTask;
+
+                bool hasApp = appUpdateInfo != null && appUpdateInfo.IsNewVersionAvailable;
+                bool hasYt = ytdlpUpdateInfo != null && ytdlpUpdateInfo.IsNewVersionAvailable;
+                bool hasFfmpeg = ffmpegUpdateInfo != null && ffmpegUpdateInfo.IsNewVersionAvailable;
+
+                if (hasApp || hasYt || hasFfmpeg)
                 {
-                    PendingAppUpdate = updateInfo;
-                    UpdateNotificationText = $"Ny versjon ({updateInfo.LatestVersion}) er tilgjengelig! Klikk for a oppdatere.";
+                    HasAnyUpdate = true;
+                    var parts = new System.Collections.Generic.List<string>();
+                    if (hasApp) parts.Add("Programmet");
+                    if (hasYt) parts.Add("yt-dlp");
+                    if (hasFfmpeg) parts.Add("FFmpeg");
+                    
+                    if (parts.Count == 1)
+                        UpdateTooltipText = $"Det finnes en ny versjon av {parts[0]}. Gå til Innstillinger for å oppdatere.";
+                    else if (parts.Count == 2)
+                        UpdateTooltipText = $"Det finnes ny versjon av {parts[0]} og {parts[1]}. Gå til Innstillinger for å oppdatere.";
+                    else
+                        UpdateTooltipText = $"Det finnes ny versjon av Programmet, yt-dlp og FFmpeg. Gå til Innstillinger for å oppdatere.";
+                }
+                else
+                {
+                    HasAnyUpdate = false;
+                    UpdateTooltipText = "";
+                }
+
+                if (hasApp)
+                {
+                    PendingAppUpdate = appUpdateInfo;
+                    UpdateNotificationText = $"Ny versjon ({appUpdateInfo!.LatestVersion}) er tilgjengelig! Klikk for å oppdatere.";
                 }
             }
             catch { }

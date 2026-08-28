@@ -38,6 +38,15 @@
                 </TextBlock.Effect>
             </TextBlock>
 
+            <TextBlock Text="🔄" 
+                       Visibility="{Binding HasAnyUpdate, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                       ToolTip="{Binding UpdateTooltipText}" 
+                       VerticalAlignment="Center" 
+                       Margin="0,0,10,0" 
+                       Foreground="{DynamicResource AccentColor}" 
+                       FontSize="18" 
+                       Cursor="Hand"/>
+  
             <Button Content="Innstillinger" Click="OpenSettings_Click" Style="{StaticResource MenuButtonStyle}" Margin="0,0,10,0" ToolTip="Åpner innstillingsmenyen"/>
             <Button Content="Om" Click="OpenAbout_Click" Style="{StaticResource MenuButtonStyle}" ToolTip="Viser informasjon om programmet og versjon"/>
         </StackPanel>

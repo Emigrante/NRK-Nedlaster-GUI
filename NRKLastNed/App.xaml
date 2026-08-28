@@ -3,6 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="Views/MainWindow.xaml">
     <Application.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        
         <!-- Standard farger (Startverdier) -->
         <SolidColorBrush x:Key="BgDark" Color="#202020"/>
         <SolidColorBrush x:Key="BgLight" Color="#2D2D2D"/>
