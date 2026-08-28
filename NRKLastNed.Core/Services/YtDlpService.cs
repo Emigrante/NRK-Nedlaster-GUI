@@ -676,6 +676,9 @@ namespace NRKLastNed.Core.Services
                 startInfo.ArgumentList.Add("mkv");
                 startInfo.ArgumentList.Add("-S");
                 startInfo.ArgumentList.Add(formatSelector);
+                startInfo.ArgumentList.Add("--write-subs");
+                startInfo.ArgumentList.Add("--sub-langs");
+                startInfo.ArgumentList.Add("all");
                 startInfo.ArgumentList.Add("--embed-subs");
                 startInfo.ArgumentList.Add("--embed-thumbnail");
                 startInfo.ArgumentList.Add("--no-mtime");
