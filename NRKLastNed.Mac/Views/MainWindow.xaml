@@ -45,14 +45,16 @@
                     FontSize="14"
                     Cursor="Hand"/>
 
-            <TextBlock Text="🔄" 
-                       IsVisible="{Binding HasAnyUpdate}" 
-                       ToolTip.Tip="{Binding UpdateTooltipText}" 
-                       VerticalAlignment="Center" 
-                       Margin="0,0,10,0" 
-                       Foreground="{DynamicResource AccentColor}" 
-                       FontSize="18" 
-                       Cursor="Hand"/>
+            <Button Content="🔄" 
+                    Click="OpenSettings_Click"
+                    IsVisible="{Binding HasAnyUpdate}" 
+                    ToolTip.Tip="{Binding UpdateTooltipText}" 
+                    Foreground="#FF4444"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    FontSize="18"
+                    Margin="0,0,5,0"
+                    Cursor="Hand" />
                        
             <Button Content="Innstillinger" Click="OpenSettings_Click" Margin="0,0,10,0" ToolTip.Tip="Åpner innstillingsmenyen"/>
             <Button Content="Om" Click="OpenAbout_Click" ToolTip.Tip="Viser informasjon om programmet og versjon"/>

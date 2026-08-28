@@ -269,11 +269,11 @@ namespace NRKLastNed.Core.ViewModels
                     if (hasFfmpeg) parts.Add("FFmpeg");
                     
                     if (parts.Count == 1)
-                        UpdateTooltipText = $"Det finnes en ny versjon av {parts[0]}. Gå til Innstillinger for å oppdatere.";
+                        UpdateTooltipText = $"Det finnes en ny versjon av {parts[0]}.\nKlikk her for å åpne innstillinger og oppdatere.";
                     else if (parts.Count == 2)
-                        UpdateTooltipText = $"Det finnes ny versjon av {parts[0]} og {parts[1]}. Gå til Innstillinger for å oppdatere.";
+                        UpdateTooltipText = $"Det finnes ny versjon av {parts[0]} og {parts[1]}.\nKlikk her for å åpne innstillinger og oppdatere.";
                     else
-                        UpdateTooltipText = $"Det finnes ny versjon av Programmet, yt-dlp og FFmpeg. Gå til Innstillinger for å oppdatere.";
+                        UpdateTooltipText = $"Det finnes ny versjon av Programmet, yt-dlp og FFmpeg.\nKlikk her for å åpne innstillinger og oppdatere.";
                 }
                 else
                 {
