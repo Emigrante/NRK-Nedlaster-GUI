@@ -38,14 +38,23 @@
                 </TextBlock.Effect>
             </TextBlock>
 
-            <Button Content="🔄" 
-                    Click="OpenSettings_Click"
+            <Button Click="OpenSettings_Click"
                     Visibility="{Binding HasAnyUpdate, Converter={StaticResource BooleanToVisibilityConverter}}" 
                     ToolTip="{Binding UpdateTooltipText}" 
                     Style="{StaticResource MenuButtonStyle}"
-                    Foreground="#FF4444"
-                    FontSize="18"
-                    Margin="0,0,5,0" />
+                    Margin="0,0,5,0">
+                <TextBlock Text="!" Foreground="#FF2222" FontSize="20" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard RepeatBehavior="Forever">
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1.0" To="0.1" Duration="0:0:0.8" AutoReverse="True"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </TextBlock.Triggers>
+                </TextBlock>
+            </Button>
   
             <Button Content="Innstillinger" Click="OpenSettings_Click" Style="{StaticResource MenuButtonStyle}" Margin="0,0,10,0" ToolTip="Åpner innstillingsmenyen"/>
             <Button Content="Om" Click="OpenAbout_Click" Style="{StaticResource MenuButtonStyle}" ToolTip="Viser informasjon om programmet og versjon"/>
