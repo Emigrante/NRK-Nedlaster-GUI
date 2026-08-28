@@ -58,7 +58,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="URL (Serie, Episode eller Film):" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBlock Text="URL (Serie, Film, Radio eller Podkast):" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
                 <TextBox Grid.Column="1" 
                          Text="{Binding InputUrl}" 
