@@ -60,6 +60,14 @@ namespace NRKLastNed.Core.ViewModels
 
         private readonly PropertyBatcher _progressBatcher = new PropertyBatcher(debounceMs: 50);
 
+        // Events for nedlastingslivssyklus (brukes av View-laget for å styre loggvinduet)
+        public event EventHandler? DownloadStarted;
+        public event EventHandler<(string Title, int CurrentIndex, int TotalCount)>? DownloadItemStarted;
+        public event EventHandler<(string status, double percent)>? DownloadItemProgress;
+        public event EventHandler<ItemProgressEventArgs>? ItemDetailedProgress;
+        public event EventHandler? DownloadCompleted;
+        public event EventHandler<string>? RawOutputReceived;
+
         public MainViewModel(IPlatformService? platform = null, IDialogService? dialogService = null)
         {
             _platform = platform ?? PlatformService.Instance;
@@ -240,6 +248,7 @@ namespace NRKLastNed.Core.ViewModels
             _settings = AppSettings.Load();
             _service = new YtDlpService(_settings, _platform);
             LogService.Log("Innstillinger oppdatert", LogLevel.Info, _settings);
+            _ = CheckAppUpdateSilentAsync();
         }
 
         public async Task CheckAppUpdateSilentAsync()
@@ -285,6 +294,11 @@ namespace NRKLastNed.Core.ViewModels
                 {
                     PendingAppUpdate = appUpdateInfo;
                     UpdateNotificationText = $"Ny versjon ({appUpdateInfo!.LatestVersion}) er tilgjengelig! Klikk for å oppdatere.";
+                }
+                else
+                {
+                    PendingAppUpdate = null;
+                    UpdateNotificationText = "";
                 }
             }
             catch { }
@@ -472,6 +486,9 @@ namespace NRKLastNed.Core.ViewModels
 
             LogService.Log($"Starter batch nedlasting av {totalCount} filer", LogLevel.Info, _settings);
 
+            // Signal til View-laget at nedlasting er startet
+            DownloadStarted?.Invoke(this, EventArgs.Empty);
+
             try
             {
                 foreach (var item in itemsToDownload)
@@ -480,15 +497,33 @@ namespace NRKLastNed.Core.ViewModels
 
                     currentIndex++;
                     BatchStatusMessage = $"Laster ned fil {currentIndex} av {totalCount}...";
-                    StatusMessage = item.Title;
+                    string displayName = !string.IsNullOrEmpty(item.FileName) ? item.FileName : item.Title;
+                    StatusMessage = displayName;
 
                     item.Status = "Laster ned...";
                     item.Progress = 0;
+
+                    // Signal per element
+                    DownloadItemStarted?.Invoke(this, (displayName, currentIndex, totalCount));
+
+                    double currentDownloadPercent = 0;
+                    double currentProcessingPercent = 0;
 
                     var progressText = new Progress<string>(t =>
                     {
                         item.Status = t;
                         _progressBatcher.QueueNotification(nameof(DownloadItems));
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
+                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
+                        {
+                            Status = item.Status,
+                            DownloadPercent = currentDownloadPercent,
+                            ProcessingPercent = currentProcessingPercent,
+                            OverallPercent = item.Progress,
+                            TotalBatchPercent = TotalProgress,
+                            CurrentFileIndex = currentIndex,
+                            TotalFilesCount = totalCount
+                        });
                     });
 
                     var progressPercent = new Progress<double>(p =>
@@ -500,22 +535,76 @@ namespace NRKLastNed.Core.ViewModels
 
                         _progressBatcher.QueueNotification(nameof(TotalProgress));
                         _progressBatcher.QueueNotification(nameof(DownloadItems));
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
+                    });
+
+                    var downloadStepProgress = new Progress<double>(dp =>
+                    {
+                        currentDownloadPercent = dp;
+                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
+                        {
+                            Status = item.Status,
+                            DownloadPercent = currentDownloadPercent,
+                            ProcessingPercent = currentProcessingPercent,
+                            OverallPercent = item.Progress,
+                            TotalBatchPercent = TotalProgress,
+                            CurrentFileIndex = currentIndex,
+                            TotalFilesCount = totalCount
+                        });
+                    });
+
+                    var processingStepProgress = new Progress<double>(pp =>
+                    {
+                        currentProcessingPercent = pp;
+                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
+                        {
+                            Status = item.Status,
+                            DownloadPercent = currentDownloadPercent,
+                            ProcessingPercent = currentProcessingPercent,
+                            OverallPercent = item.Progress,
+                            TotalBatchPercent = TotalProgress,
+                            CurrentFileIndex = currentIndex,
+                            TotalFilesCount = totalCount
+                        });
+                    });
+
+                    // Sender rå prosessoutput videre til View-laget
+                    var rawOutputProgress = new Progress<string>(line =>
+                    {
+                        RawOutputReceived?.Invoke(this, line);
                     });
 
                     try
                     {
-                        await _service.DownloadItemAsync(item, progressText, progressPercent, token);
+                        await _service.DownloadItemAsync(item, progressText, progressPercent, rawOutputProgress, downloadStepProgress, processingStepProgress, token, currentIndex, totalCount);
                         item.Status = "Ferdig";
                         item.Progress = 100;
+                        currentDownloadPercent = 100;
+                        currentProcessingPercent = 100;
+                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
+                        {
+                            Status = "Ferdig",
+                            DownloadPercent = 100,
+                            ProcessingPercent = 100,
+                            OverallPercent = 100,
+                            TotalBatchPercent = TotalProgress,
+                            CurrentFileIndex = currentIndex,
+                            TotalFilesCount = totalCount
+                        });
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
                     }
                     catch (OperationCanceledException)
                     {
                         item.Status = "Avbrutt";
+                        RawOutputReceived?.Invoke(this, "⚠ Nedlasting avbrutt av bruker.");
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
                         break;
                     }
                     catch (Exception ex)
                     {
                         item.Status = "Feilet";
+                        RawOutputReceived?.Invoke(this, $"✖ Feilet: {ex.Message}");
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
                         LogService.Log($"Feil under nedlasting av {item.Title}: {ex.Message}", LogLevel.Error, _settings);
                     }
                 }
@@ -537,6 +626,9 @@ namespace NRKLastNed.Core.ViewModels
                 IsDownloading = false;
                 _cts?.Dispose();
                 _cts = null;
+
+                // Signal at nedlasting er fullført
+                DownloadCompleted?.Invoke(this, EventArgs.Empty);
             }
         }
 

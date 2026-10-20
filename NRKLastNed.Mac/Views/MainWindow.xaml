@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:NRKLastNed.Core.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -119,6 +119,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="100"/>
+                        <ColumnDefinition Width="120"/>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="150"/>
                     </Grid.ColumnDefinitions>
@@ -127,8 +128,9 @@
                     <TextBlock Grid.Column="2" Text="Tittel" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
                     <TextBlock Grid.Column="3" Text="Oppløsning" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}"/>
                     <TextBlock Grid.Column="4" Text="Språk" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}"/>
-                    <TextBlock Grid.Column="5" Text="Status" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
-                    <TextBlock Grid.Column="6" Text="Fremdrift" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="5" Text="Kodeks" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Grid.Column="6" Text="Status" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
+                    <TextBlock Grid.Column="7" Text="Fremdrift" VerticalAlignment="Center" Margin="5,0" FontWeight="Bold"/>
                 </Grid>
                 
                 <!-- Items -->
@@ -143,6 +145,7 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="100"/>
                                         <ColumnDefinition Width="100"/>
+                                        <ColumnDefinition Width="120"/>
                                         <ColumnDefinition Width="150"/>
                                         <ColumnDefinition Width="150"/>
                                     </Grid.ColumnDefinitions>
@@ -151,8 +154,9 @@
                                     <TextBlock Grid.Column="2" Text="{Binding Title}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
                                     <ComboBox Grid.Column="3" ItemsSource="{Binding AvailableResolutions}" SelectedItem="{Binding SelectedResolution}" VerticalAlignment="Center" Margin="2" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding IsTelevision}"/>
                                     <ComboBox Grid.Column="4" ItemsSource="{Binding AvailableLanguages}" SelectedItem="{Binding SelectedLanguage}" VerticalAlignment="Center" Margin="2" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding IsTelevision}"/>
-                                    <TextBlock Grid.Column="5" Text="{Binding Status}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
-                                    <ProgressBar Grid.Column="6" Value="{Binding Progress}" Maximum="100" Height="15" VerticalAlignment="Center" Margin="5,0"
+                                    <ComboBox Grid.Column="5" ItemsSource="{Binding AvailableCodecs}" SelectedItem="{Binding SelectedCodec}" VerticalAlignment="Center" Margin="2" IsVisible="{Binding IsTelevision, Converter={StaticResource BoolToVis}}" IsEnabled="{Binding IsTelevision}"/>
+                                    <TextBlock Grid.Column="6" Text="{Binding Status}" VerticalAlignment="Center" Margin="5,0" TextTrimming="CharacterEllipsis"/>
+                                    <ProgressBar Grid.Column="7" Value="{Binding Progress}" Maximum="100" Height="15" VerticalAlignment="Center" Margin="5,0"
                                                 Foreground="{DynamicResource AccentColor}" Background="#444"/>
                                 </Grid>
                             </DataTemplate>

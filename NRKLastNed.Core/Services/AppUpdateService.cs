@@ -84,7 +84,7 @@ namespace NRKLastNed.Core.Services
             }
             catch { }
 
-            return "1.30";
+            return "1.5";
         }
 
         public async Task<AppUpdateInfo> CheckForAppUpdatesAsync()

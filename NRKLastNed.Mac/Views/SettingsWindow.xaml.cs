@@ -40,8 +40,10 @@ namespace NRKLastNed.Mac.Views
             var chkUseSystemTemp = this.FindControl<CheckBox>("chkUseSystemTemp")!;
             var pnlCustomTemp = this.FindControl<Grid>("pnlCustomTemp")!;
             cmbResolution = this.FindControl<ComboBox>("cmbResolution")!;
+            cmbDefaultCodec = this.FindControl<ComboBox>("cmbDefaultCodec")!;
             cmbTheme = this.FindControl<ComboBox>("cmbTheme")!;
             cmbLogLevel = this.FindControl<ComboBox>("cmbLogLevel")!;
+            cmbDownloadLogLevel = this.FindControl<ComboBox>("cmbDownloadLogLevel")!;
             chkEnableLog = this.FindControl<CheckBox>("chkEnableLog")!;
             lblAppVersion = this.FindControl<TextBlock>("lblAppVersion")!;
             btnAppUpdate = this.FindControl<Button>("btnAppUpdate")!;
@@ -62,8 +64,10 @@ namespace NRKLastNed.Mac.Views
         private void InitializeUI()
         {
             cmbResolution.ItemsSource = new List<string> { "2160", "1440", "1080", "720", "540", "480", "best" };
+            cmbDefaultCodec.ItemsSource = VideoCodecs.All;
             cmbTheme.ItemsSource = new List<string> { "System", "Light", "Dark" };
             cmbLogLevel.ItemsSource = Enum.GetValues(typeof(LogLevel));
+            cmbDownloadLogLevel.ItemsSource = new List<string> { "Info", "Debug" };
 
             // NY: Initialiser TV/Radio-mapper
             txtTvOutput.Text = _settings.TvOutputFolder;
@@ -71,22 +75,26 @@ namespace NRKLastNed.Mac.Views
             chkUseSameFolder.IsChecked = _settings.UseSameFolderForBoth;
 
             // Oppdater synlighet av Radio-mappe basert på delt-mappe checkbox
-            UpdateRadioFolderVisibility();
+            UpdateFolderControls(chkUseSameFolder.IsChecked == true);
 
             txtTemp.Text = _settings.TempFolder;
             chkUseSystemTemp.IsChecked = _settings.UseSystemTemp;
             pnlCustomTemp.IsEnabled = !_settings.UseSystemTemp;
 
             cmbResolution.SelectedItem = _settings.DefaultResolution;
+            cmbDefaultCodec.SelectedItem = _settings.DefaultCodec;
             cmbTheme.SelectedItem = _settings.AppTheme;
 
             chkEnableLog.IsChecked = _settings.EnableLogging;
             cmbLogLevel.SelectedItem = _settings.LogLevel;
+            cmbDownloadLogLevel.SelectedItem = _settings.DownloadLogLevel;
         }
 
-        private void UpdateRadioFolderVisibility()
+        private void UpdateFolderControls(bool isShared)
         {
-            bool isShared = chkUseSameFolder.IsChecked ?? false;
+            lblTvOutput.Text = isShared ? "TV- og radiomappe:" : "TV-mappe:";
+            lblTvOutput.IsVisible = true;
+            gridTvOutput.IsVisible = true;
             lblRadioOutput.IsVisible = !isShared;
             gridRadioOutput.IsVisible = !isShared;
         }
@@ -269,7 +277,9 @@ namespace NRKLastNed.Mac.Views
             {
                 var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
-                    Title = "Velg TV-nedlastningsmappe",
+                    Title = chkUseSameFolder.IsChecked == true
+                        ? "Velg felles nedlastningsmappe for TV og radio"
+                        : "Velg TV-nedlastningsmappe",
                     AllowMultiple = false
                 });
 
@@ -299,15 +309,12 @@ namespace NRKLastNed.Mac.Views
             }
         }
 
-        // NY: Checkbox for delt mappe
-        private void chkUseSameFolder_Checked(object sender, RoutedEventArgs e)
+        private void chkUseSameFolder_Click(object? sender, RoutedEventArgs e)
         {
-            UpdateRadioFolderVisibility();
-        }
-
-        private void chkUseSameFolder_Unchecked(object sender, RoutedEventArgs e)
-        {
-            UpdateRadioFolderVisibility();
+            if (sender is CheckBox checkBox)
+            {
+                UpdateFolderControls(checkBox.IsChecked == true);
+            }
         }
 
         private async void BrowseTemp_Click(object sender, RoutedEventArgs e)
@@ -347,6 +354,9 @@ namespace NRKLastNed.Mac.Views
             if (cmbResolution.SelectedItem is string resolution)
                 _settings.DefaultResolution = resolution;
 
+            if (cmbDefaultCodec.SelectedItem is string codec)
+                _settings.DefaultCodec = codec;
+
             if (cmbTheme.SelectedItem is string theme)
             {
                 _settings.AppTheme = theme;
@@ -355,6 +365,7 @@ namespace NRKLastNed.Mac.Views
 
             _settings.EnableLogging = chkEnableLog.IsChecked == true;
             if (cmbLogLevel.SelectedItem is LogLevel level) _settings.LogLevel = level;
+            if (cmbDownloadLogLevel.SelectedItem is string logDetail) _settings.DownloadLogLevel = logDetail;
 
             AppSettings.Save(_settings);
             Close(true);

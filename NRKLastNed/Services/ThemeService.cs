@@ -58,6 +58,8 @@ namespace NRKLastNed.Services
             SetResource("TextMuted", (Color)ColorConverter.ConvertFromString("#999999"));
             SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#454545"));
             SetResource("ButtonText", Colors.White);
+            SetResource("SelectionBg", (Color)ColorConverter.ConvertFromString("#1A3A5C"));
+            SetResource("HoverBg", (Color)ColorConverter.ConvertFromString("#2A2A2A"));
         }
 
         private static void ApplyLightTheme()
@@ -71,6 +73,8 @@ namespace NRKLastNed.Services
             SetResource("TextMuted", (Color)ColorConverter.ConvertFromString("#666666"));
             SetResource("BorderColor", (Color)ColorConverter.ConvertFromString("#E5E5E5"));
             SetResource("ButtonText", Colors.White);
+            SetResource("SelectionBg", (Color)ColorConverter.ConvertFromString("#CCE4F7"));
+            SetResource("HoverBg", (Color)ColorConverter.ConvertFromString("#EAEAEA"));
         }
 
         private static void SetResource(string key, Color color)

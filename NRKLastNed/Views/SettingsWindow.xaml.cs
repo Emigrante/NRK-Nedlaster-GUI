@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Collections.Generic;
 using Microsoft.Win32;
 using NRKLastNed.Core.Models;
@@ -42,6 +43,7 @@ namespace NRKLastNed.Views
             cmbResolution.ItemsSource = new List<string> { "2160", "1440", "1080", "720", "540", "480", "best" };
             cmbTheme.ItemsSource = new List<string> { "System", "Lys", "Mørk" };
             cmbLogLevel.ItemsSource = Enum.GetValues(typeof(LogLevel));
+            cmbDefaultCodec.ItemsSource = VideoCodecs.All;
 
             // NY: Initialiser TV/Radio-mapper
             txtTvOutput.Text = _settings.TvOutputFolder;
@@ -56,6 +58,15 @@ namespace NRKLastNed.Views
             pnlCustomTemp.IsEnabled = !_settings.UseSystemTemp;
 
             cmbResolution.SelectedItem = _settings.DefaultResolution;
+            cmbDefaultCodec.SelectedItem = _settings.DefaultCodec;
+            chkAutoOpenDownloadLog.IsChecked = _settings.AutoOpenDownloadLog;
+            if (string.Equals(_settings.DownloadLogLevel, "Debug", StringComparison.OrdinalIgnoreCase))
+                cmbDownloadLogLevel.SelectedIndex = 1;
+            else
+                cmbDownloadLogLevel.SelectedIndex = 0;
+
+            chkHardwareAcceleration.IsChecked = _settings.UseHardwareAcceleration;
+            _ = UpdateGpuDetectionLabelAsync();
             
             // Map saved theme to Lys/Mørk
             string loadedTheme = _settings.AppTheme;
@@ -71,9 +82,14 @@ namespace NRKLastNed.Views
 
         private void UpdateRadioFolderVisibility()
         {
-            bool isShared = chkUseSameFolder.IsChecked ?? false;
-            lblRadioOutput.Visibility = isShared ? Visibility.Collapsed : Visibility.Visible;
-            gridRadioOutput.Visibility = isShared ? Visibility.Collapsed : Visibility.Visible;
+            bool isShared = chkUseSameFolder.IsChecked == true;
+            lblTvOutput.Text = isShared ? "TV- og radiomappe:" : "TV-mappe:";
+            lblTvOutput.Visibility = Visibility.Visible;
+            gridTvOutput.Visibility = Visibility.Visible;
+
+            var radioVisibility = isShared ? Visibility.Collapsed : Visibility.Visible;
+            lblRadioOutput.Visibility = radioVisibility;
+            gridRadioOutput.Visibility = radioVisibility;
         }
 
         private async Task CheckVersionsAsync()
@@ -84,7 +100,7 @@ namespace NRKLastNed.Views
 
             _pendingAppUpdate = await _appUpdateService.CheckForAppUpdatesAsync();
 
-            if (_pendingAppUpdate.IsNewVersionAvailable)
+            if (_pendingAppUpdate != null && _pendingAppUpdate.IsNewVersionAvailable)
             {
                 lblAppVersion.Text = $"Ny versjon tilgjengelig ({_pendingAppUpdate.LatestVersion})";
                 btnAppUpdate.Content = "Oppdater";
@@ -103,14 +119,14 @@ namespace NRKLastNed.Views
 
             _pendingYtDlpUpdate = await _toolUpdateService.CheckForYtDlpUpdateAsync();
 
-            if (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent")
+            if (_pendingYtDlpUpdate != null && (_pendingYtDlpUpdate.CurrentVersion == "Ikke installert" || _pendingYtDlpUpdate.CurrentVersion == "Ukjent"))
             {
                 // STATUS: MANGLER
                 lblYtDlpVersion.Text = "Mangler (Må lastes ned)";
                 btnYtDlpUpdate.Content = "Last ned";
                 btnYtDlpUpdate.IsEnabled = true;
             }
-            else if (_pendingYtDlpUpdate.IsNewVersionAvailable)
+            else if (_pendingYtDlpUpdate != null && _pendingYtDlpUpdate.IsNewVersionAvailable)
             {
                 // STATUS: NY VERSJON
                 lblYtDlpVersion.Text = "Ny versjon tilgjengelig";
@@ -140,7 +156,7 @@ namespace NRKLastNed.Views
                 btnFfmpegUpdate.Content = "Last ned";
                 btnFfmpegUpdate.IsEnabled = true;
             }
-            else if (_pendingFfmpegUpdate.IsNewVersionAvailable)
+            else if (_pendingFfmpegUpdate != null && _pendingFfmpegUpdate.IsNewVersionAvailable)
             {
                 // STATUS: NY VERSJON
                 lblFfmpegVersion.Text = "Ny versjon tilgjengelig";
@@ -241,7 +257,12 @@ namespace NRKLastNed.Views
         // NY: TV-mappe browser
         private void BrowseTvOutput_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFolderDialog();
+            var dialog = new OpenFolderDialog
+            {
+                Title = chkUseSameFolder.IsChecked == true
+                    ? "Velg felles nedlastningsmappe for TV og radio"
+                    : "Velg TV-nedlastningsmappe"
+            };
             if (dialog.ShowDialog() == true) txtTvOutput.Text = dialog.FolderName;
         }
 
@@ -256,11 +277,13 @@ namespace NRKLastNed.Views
         private void chkUseSameFolder_Checked(object sender, RoutedEventArgs e)
         {
             UpdateRadioFolderVisibility();
+            LiveSave_Trigger(sender, e);
         }
 
         private void chkUseSameFolder_Unchecked(object sender, RoutedEventArgs e)
         {
             UpdateRadioFolderVisibility();
+            LiveSave_Trigger(sender, e);
         }
 
         private void BrowseTemp_Click(object sender, RoutedEventArgs e)
@@ -269,8 +292,17 @@ namespace NRKLastNed.Views
             if (dialog.ShowDialog() == true) txtTemp.Text = dialog.FolderName;
         }
 
-        private void chkUseSystemTemp_Checked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = false;
-        private void chkUseSystemTemp_Unchecked(object sender, RoutedEventArgs e) => pnlCustomTemp.IsEnabled = true;
+        private void chkUseSystemTemp_Checked(object sender, RoutedEventArgs e)
+        {
+            pnlCustomTemp.IsEnabled = false;
+            LiveSave_Trigger(sender, e);
+        }
+
+        private void chkUseSystemTemp_Unchecked(object sender, RoutedEventArgs e)
+        {
+            pnlCustomTemp.IsEnabled = true;
+            LiveSave_Trigger(sender, e);
+        }
 
         private void LiveSave_Trigger(object sender, RoutedEventArgs e)
         {
@@ -303,10 +335,39 @@ namespace NRKLastNed.Views
             if (cmbResolution.SelectedItem is string resolution)
                 _settings.DefaultResolution = resolution;
 
+            if (cmbDefaultCodec.SelectedItem is string codec)
+                _settings.DefaultCodec = codec;
+
+            _settings.AutoOpenDownloadLog = chkAutoOpenDownloadLog.IsChecked == true;
+            if (cmbDownloadLogLevel.SelectedItem is ComboBoxItem logItem && logItem.Tag is string tag)
+                _settings.DownloadLogLevel = tag;
+
+            _settings.UseHardwareAcceleration = chkHardwareAcceleration.IsChecked == true;
+
             _settings.EnableLogging = chkEnableLog.IsChecked == true;
             if (cmbLogLevel.SelectedItem is LogLevel level) _settings.LogLevel = level;
 
             AppSettings.Save(_settings);
+        }
+
+        private async Task UpdateGpuDetectionLabelAsync()
+        {
+            try
+            {
+                string ffmpegPath = PlatformService.Instance.GetToolPath("ffmpeg");
+                var caps = await HardwareEncoderService.GetCapabilitiesAsync(ffmpegPath);
+                _ = Dispatcher.BeginInvoke(() =>
+                {
+                    lblGpuDetection.Text = $"Oppdaget: {caps.Description}";
+                });
+            }
+            catch
+            {
+                _ = Dispatcher.BeginInvoke(() =>
+                {
+                    lblGpuDetection.Text = "Kunne ikke sjekke GPU";
+                });
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)

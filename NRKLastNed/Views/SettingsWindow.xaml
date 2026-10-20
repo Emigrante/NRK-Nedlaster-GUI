@@ -33,11 +33,11 @@
                     <!-- Checkbox for delt mappe -->
                     <CheckBox x:Name="chkUseSameFolder" Content="Bruk samme mappe for både TV og Radio" 
                               Foreground="{DynamicResource TextColor}" Margin="0,0,0,15" 
-                              Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"/>
+                              Checked="chkUseSameFolder_Checked" Unchecked="chkUseSameFolder_Unchecked"/>
 
                     <!-- TV-mappe -->
-                    <TextBlock Text="TV-mappe:" Margin="0,0,0,5"/>
-                    <Grid Margin="0,0,0,15">
+                    <TextBlock x:Name="lblTvOutput" Text="TV-mappe:" Margin="0,0,0,5"/>
+                    <Grid x:Name="gridTvOutput" Margin="0,0,0,15">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
@@ -63,7 +63,7 @@
                 <StackPanel Margin="10">
                     <CheckBox x:Name="chkUseSystemTemp" Content="Bruk standard Windows temp mappe" 
                               Foreground="{DynamicResource TextColor}" Margin="0,0,0,10" 
-                              Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"/>
+                              Checked="chkUseSystemTemp_Checked" Unchecked="chkUseSystemTemp_Unchecked"/>
 
                     <Grid x:Name="pnlCustomTemp" IsEnabled="False">
                         <Grid.ColumnDefinitions>
@@ -77,23 +77,73 @@
             </GroupBox>
 
             <GroupBox Grid.Row="3" Header="Preferanser" Foreground="{DynamicResource TextColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">
-                <Grid Margin="10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel Margin="10">
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Text="Standard oppløsning:" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="cmbResolution" SelectionChanged="LiveSave_Trigger"/>
-                    </StackPanel>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Standard oppløsning:" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="cmbResolution" SelectionChanged="LiveSave_Trigger"/>
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="2">
-                        <TextBlock Text="Fargetema:" Margin="0,0,0,5"/>
-                        <ComboBox x:Name="cmbTheme" SelectionChanged="CmbTheme_SelectionChanged"/>
-                    </StackPanel>
-                </Grid>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="Standard videokodeks:" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="cmbDefaultCodec" SelectionChanged="LiveSave_Trigger"
+                                      ToolTip="Standard kodeks for TV-nedlastinger. 'Ingen rekoding' beholder originalstrøm (raskest)."/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="Fargetema:" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="cmbTheme" SelectionChanged="CmbTheme_SelectionChanged"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <CheckBox x:Name="chkAutoOpenDownloadLog"
+                              Content="Åpne loggvindu automatisk når en fil lastes ned eller bearbeides"
+                              Foreground="{DynamicResource TextColor}"
+                              Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"
+                              Margin="0,5,0,0"
+                              ToolTip="Viser live logg- og bearbeidingsvinduet automatisk ved start av nedlasting"/>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Detaljnivå i loggvindu:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="cmbDownloadLogLevel" Grid.Column="1" Width="260" HorizontalAlignment="Left" SelectionChanged="LiveSave_Trigger"
+                                  ToolTip="Velg om loggvinduet skal vise en ren oppsummering (Info) eller detaljert prosessutskrift (Debug).">
+                            <ComboBoxItem Tag="Info" Content="Info (anbefalt - ren oppsummering)"/>
+                            <ComboBoxItem Tag="Debug" Content="Debug (detaljert prosessutskrift)"/>
+                        </ComboBox>
+                    </Grid>
+
+                    <Grid Margin="0,10,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <CheckBox x:Name="chkHardwareAcceleration"
+                                  Content="Bruk maskinvareakselerasjon (GPU)"
+                                  Foreground="{DynamicResource TextColor}"
+                                  Checked="LiveSave_Trigger" Unchecked="LiveSave_Trigger"
+                                  VerticalAlignment="Center"
+                                  ToolTip="Aktiverer automatisk bruk av GPU (Intel QSV, NVIDIA NVENC, AMD AMF) for lynrask bearbeiding med automatisk fallback til CPU."/>
+                        <TextBlock x:Name="lblGpuDetection" Grid.Column="1"
+                                   Text="Sjekker GPU..."
+                                   Foreground="{DynamicResource TextMuted}"
+                                   FontSize="11"
+                                   Margin="15,0,0,0"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Grid>
+                </StackPanel>
             </GroupBox>
 
             <GroupBox Grid.Row="4" Header="Verktøy og Oppdateringer" Foreground="{DynamicResource TextColor}" BorderBrush="{DynamicResource BorderColor}" Margin="0,0,0,15">

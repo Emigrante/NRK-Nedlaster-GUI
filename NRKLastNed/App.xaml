@@ -15,6 +15,8 @@
         <SolidColorBrush x:Key="TextMuted" Color="#999999"/>
         <SolidColorBrush x:Key="BorderColor" Color="#454545"/>
         <SolidColorBrush x:Key="ButtonText" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="SelectionBg" Color="#1A3A5C"/>
+        <SolidColorBrush x:Key="HoverBg" Color="#2A2A2A"/>
 
         <!-- PILKNAPP STIL -->
         <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">

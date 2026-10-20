@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text.Json;
 using NRKLastNed.Core.Services;
@@ -26,6 +26,24 @@ namespace NRKLastNed.Core.Models
 
         // Standard opplosning (720 som standard)
         public string DefaultResolution { get; set; } = "720";
+
+        // Standard kodek for TV-nedlastinger (x264 er NRK original)
+        public string DefaultCodec { get; set; } = VideoCodecs.H264;
+
+        // Maskinvareakselerasjon (GPU naar tilgjengelig)
+        public bool UseHardwareAcceleration { get; set; } = true;
+
+        // Auto-aapne nedlastingslogg naar nedlasting starter
+        public bool AutoOpenDownloadLog { get; set; } = true;
+
+        // Auto-lukk nedlastingslogg naar ferdig
+        public bool AutoCloseDownloadLog { get; set; } = false;
+
+        // Detaljnivaa i nedlastings- og bearbeidingslogg: "Info" (ren oppsummering) eller "Debug" (detaljert prosessutskrift)
+        public string DownloadLogLevel { get; set; } = "Info";
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool IsDebugDownloadLog => string.Equals(DownloadLogLevel, "Debug", StringComparison.OrdinalIgnoreCase);
 
         // Tema: "System", "Light", "Dark"
         public string AppTheme { get; set; } = "Dark";
@@ -83,6 +101,17 @@ namespace NRKLastNed.Core.Models
                     {
                         string defaultBase = PlatformService.Instance.GetDefaultOutputFolder();
                         settings.RadioOutputFolder = Path.Combine(defaultBase, "Radio");
+                    }
+                    if (string.IsNullOrEmpty(settings.DefaultCodec) ||
+                        settings.DefaultCodec == VideoCodecs.None ||
+                        settings.DefaultCodec == VideoCodecs.LegacyNone ||
+                        settings.DefaultCodec == VideoCodecs.LegacyH264)
+                    {
+                        settings.DefaultCodec = VideoCodecs.H264;
+                    }
+                    if (string.IsNullOrEmpty(settings.DownloadLogLevel))
+                    {
+                        settings.DownloadLogLevel = "Info";
                     }
 
                     return settings;

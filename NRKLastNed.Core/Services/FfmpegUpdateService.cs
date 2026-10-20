@@ -235,7 +235,8 @@ namespace NRKLastNed.Core.Services
                             string dest = _platform.GetToolPath("ffmpeg");
                             if (File.Exists(dest)) File.Delete(dest);
                             entry.ExtractToFile(dest, true);
-                            File.SetLastWriteTimeUtc(dest, info.PublishedAt);
+                            DateTime writeTime = info.PublishedAt != DateTime.MinValue ? info.PublishedAt : DateTime.UtcNow;
+                            File.SetLastWriteTimeUtc(dest, writeTime);
                             _platform.SetExecutablePermission(dest);
                         }
                         else if (entry.FullName.EndsWith($"bin/{ffprobeName}", StringComparison.OrdinalIgnoreCase) ||
@@ -244,7 +245,8 @@ namespace NRKLastNed.Core.Services
                             string dest = _platform.GetToolPath("ffprobe");
                             if (File.Exists(dest)) File.Delete(dest);
                             entry.ExtractToFile(dest, true);
-                            File.SetLastWriteTimeUtc(dest, info.PublishedAt);
+                            DateTime writeTime = info.PublishedAt != DateTime.MinValue ? info.PublishedAt : DateTime.UtcNow;
+                            File.SetLastWriteTimeUtc(dest, writeTime);
                             _platform.SetExecutablePermission(dest);
                         }
                     }

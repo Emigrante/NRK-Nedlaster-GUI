@@ -4,64 +4,113 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="NRK Nedlaster GUI" Height="600" Width="1050"
+        Title="NRK Nedlaster GUI" Height="680" Width="1200"
+        MinHeight="520" MinWidth="900"
         Background="{DynamicResource BgDark}"
         Foreground="{DynamicResource TextColor}"
         WindowStartupLocation="CenterScreen"
-        Icon="/Assets/logo.ico">
+        Icon="/Assets/logo.ico"
+        Closing="Window_Closing">
 
-
-
-    <Grid Margin="20">
+    <Grid>
         <Grid.RowDefinitions>
+            <!-- Topbar -->
+            <RowDefinition Height="52"/>
+            <!-- URL-panel -->
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <!-- Innhold -->
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <!-- Statusbar -->
+            <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" FontSize="18" FontWeight="Medium" Foreground="{DynamicResource TextColor}" Opacity="0.8" VerticalAlignment="Top"/>
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- TOPBAR                                              -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Border Grid.Row="0" Background="{DynamicResource BgLight}"
+                BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,20">
-            <TextBlock Text="{Binding UpdateNotificationText}" 
-                       Foreground="#FF4444" 
-                       FontWeight="Bold" 
-                       VerticalAlignment="Center" 
-                       Margin="0,0,20,0"
-                       FontSize="14"
-                       Cursor="Hand">
-                <TextBlock.InputBindings>
-                    <MouseBinding Gesture="LeftClick" Command="{Binding ApplyUpdateCommand}"/>
-                </TextBlock.InputBindings>
-                <TextBlock.Effect>
-                    <DropShadowEffect Color="Black" BlurRadius="2" ShadowDepth="1" Opacity="0.5"/>
-                </TextBlock.Effect>
-            </TextBlock>
+                <!-- Logo / Tittel -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="28" Height="28" CornerRadius="6" Background="{DynamicResource AccentColor}" Margin="0,0,10,0">
+                        <TextBlock Text="NRK" FontSize="9" FontWeight="Black" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock x:Name="txtWindowTitle" Text="NRK Nedlaster"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextColor}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
 
-            <Button Click="OpenSettings_Click"
-                    Visibility="{Binding HasAnyUpdate, Converter={StaticResource BooleanToVisibilityConverter}}" 
-                    ToolTip="{Binding UpdateTooltipText}" 
-                    Style="{StaticResource MenuButtonStyle}"
-                    Margin="0,0,5,0">
-                <TextBlock Text="!" Foreground="#FF2222" FontSize="20" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock.Triggers>
-                        <EventTrigger RoutedEvent="Loaded">
-                            <BeginStoryboard>
-                                <Storyboard RepeatBehavior="Forever">
-                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1.0" To="0.1" Duration="0:0:0.8" AutoReverse="True"/>
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </TextBlock.Triggers>
-                </TextBlock>
-            </Button>
-  
-            <Button Content="Innstillinger" Click="OpenSettings_Click" Style="{StaticResource MenuButtonStyle}" Margin="0,0,10,0" ToolTip="Åpner innstillingsmenyen"/>
-            <Button Content="Om" Click="OpenAbout_Click" Style="{StaticResource MenuButtonStyle}" ToolTip="Viser informasjon om programmet og versjon"/>
-        </StackPanel>
+                <!-- Midt: oppdateringsvarsel -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding UpdateNotificationText}"
+                               Foreground="#FF6B6B"
+                               FontWeight="SemiBold"
+                               FontSize="12"
+                               Cursor="Hand"
+                               VerticalAlignment="Center">
+                        <TextBlock.InputBindings>
+                            <MouseBinding Gesture="LeftClick" Command="{Binding ApplyUpdateCommand}"/>
+                        </TextBlock.InputBindings>
+                    </TextBlock>
+                </StackPanel>
 
-        <!-- URL-input -->
-        <Border Grid.Row="1" Background="{DynamicResource BgLight}" CornerRadius="8" Padding="15" Margin="0,0,0,20">
+                <!-- Høyre: menyknapper -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- Oppdateringsvarsling-prikk -->
+                    <Button Visibility="{Binding HasAnyUpdate, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            ToolTip="{Binding UpdateTooltipText}"
+                            Click="OpenSettings_Click"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Padding="8,6" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="#FF6B6B" VerticalAlignment="Center" Margin="0,0,5,0">
+                                <Ellipse.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard RepeatBehavior="Forever">
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 From="1.0" To="0.2"
+                                                                 Duration="0:0:0.9" AutoReverse="True"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Ellipse.Triggers>
+                            </Ellipse>
+                            <TextBlock Text="Oppdatering" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Content="Nedlastingslogg" x:Name="btnShowLog"
+                            Click="ShowOutputWindow_Click"
+                            Style="{StaticResource MenuButtonStyle}" Padding="12,6" Margin="0,0,6,0"
+                            ToolTip="Vis live nedlastingslogg og prosessoutput"/>
+
+                    <Button Content="Innstillinger" Click="OpenSettings_Click"
+                            Style="{StaticResource MenuButtonStyle}" Padding="12,6" Margin="0,0,6,0"
+                            ToolTip="Åpner innstillingsmenyen"/>
+
+                    <Button Content="Om" Click="OpenAbout_Click"
+                            Style="{StaticResource MenuButtonStyle}" Padding="12,6"
+                            ToolTip="Viser informasjon om programmet og versjon"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- URL-INPUT PANEL                                     -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Border Grid.Row="1" Background="{DynamicResource BgLight}"
+                BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1"
+                Padding="16,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -69,117 +118,381 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Text="URL (Serie, Film, Radio eller Podkast):" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <TextBlock Text="🔗" FontSize="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="URL:" FontSize="13" FontWeight="SemiBold"
+                               VerticalAlignment="Center" Foreground="{DynamicResource TextColor}"/>
+                </StackPanel>
 
-                <TextBox Grid.Column="1" 
-                         Text="{Binding InputUrl}" 
-                         Background="{DynamicResource BgInput}"
-                         BorderBrush="{DynamicResource BorderColor}"
-                         BorderThickness="1"
-                         VerticalContentAlignment="Center"/>
+                <TextBox Grid.Column="1"
+                         x:Name="txtUrl"
+                         Text="{Binding InputUrl, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="13"
+                         Padding="10,8"
+                         VerticalContentAlignment="Center"
+                         ToolTip="Lim inn URL til NRK TV, Radio eller Podkast">
+                    <TextBox.InputBindings>
+                        <KeyBinding Key="Return" Command="{Binding AddCommand}"/>
+                    </TextBox.InputBindings>
+                </TextBox>
 
-                <Button Grid.Column="2" Content="Legg til" Command="{Binding AddCommand}" Margin="10,0,0,0" Width="80" ToolTip="Henter informasjon og legger til video eller lyd fra URL-en i listen"/>
+                <Button Grid.Column="2"
+                        Content="Legg til"
+                        Command="{Binding AddCommand}"
+                        Margin="10,0,0,0"
+                        Width="100"
+                        Padding="0,8"
+                        FontSize="13"
+                        ToolTip="Henter metadata og legger til i listen"/>
             </Grid>
         </Border>
 
-        <DataGrid Grid.Row="2" ItemsSource="{Binding DownloadItems}"
-                  SelectedItem="{Binding SelectedGridItem}"
-                  AutoGenerateColumns="False" Background="{DynamicResource BgLight}" 
-                  HeadersVisibility="Column" BorderThickness="0"
-                  RowBackground="{DynamicResource BgLight}" Foreground="{DynamicResource TextColor}"
-                  GridLinesVisibility="Vertical" VerticalGridLinesBrush="{DynamicResource BorderColor}" CanUserAddRows="False">
-
-            <DataGrid.ContextMenu>
-                <ContextMenu>
-                    <MenuItem Header="Fjern valgt" Command="{Binding RemoveItemCommand}"/>
-                    <MenuItem Header="Fjern alle ferdige" Command="{Binding RemoveFinishedCommand}"/>
-                    <Separator/>
-                    <MenuItem Header="Åpne nedlastningsmappe" Command="{Binding OpenFolderCommand}"/>
-                </ContextMenu>
-            </DataGrid.ContextMenu>
-
-            <DataGrid.Columns>
-                <DataGridCheckBoxColumn Header="#" Binding="{Binding IsSelected}" Width="40"/>
-                <DataGridTextColumn Header="Sesong/Ep" Binding="{Binding SeasonEpisode}" Width="80" IsReadOnly="True"/>
-                <DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="*" IsReadOnly="True"/>
-
-                <DataGridTemplateColumn Header="Oppløsning" Width="120">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding AvailableResolutions}" 
-                                      SelectedItem="{Binding SelectedResolution, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEnabled="{Binding IsTelevision}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTemplateColumn Header="Lydspråk" Width="120">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ComboBox ItemsSource="{Binding AvailableLanguages}" 
-                                      SelectedItem="{Binding SelectedLanguage, UpdateSourceTrigger=PropertyChanged}"
-                                      IsEnabled="{Binding IsTelevision}"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-
-                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="180" IsReadOnly="True"/>
-
-                <DataGridTemplateColumn Header="Fremdrift" Width="200">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <ProgressBar Value="{Binding Progress, Mode=OneWay}" Maximum="100" Height="15" Foreground="{DynamicResource AccentColor}" Background="#444" BorderThickness="0"/>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-
-            <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell">
-                    <Setter Property="Padding" Value="5"/>
-                    <Setter Property="Background" Value="Transparent"/>
-                    <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-                </Style>
-            </DataGrid.CellStyle>
-            <DataGrid.ColumnHeaderStyle>
-                <Style TargetType="DataGridColumnHeader">
-                    <Setter Property="Background" Value="{DynamicResource BgInput}"/>
-                    <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
-                    <Setter Property="Padding" Value="10,5"/>
-                    <Setter Property="FontWeight" Value="SemiBold"/>
-                    <Setter Property="BorderThickness" Value="0,0,1,0"/>
-                    <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
-                </Style>
-            </DataGrid.ColumnHeaderStyle>
-        </DataGrid>
-
-        <Grid Grid.Row="3" Margin="0,20,0,0">
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- INNHOLDSDEL: liste + sidepanel                      -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="260"/>
             </Grid.ColumnDefinitions>
 
-            <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextMuted}"/>
-                <TextBlock Text="{Binding BatchStatusMessage}" Foreground="{DynamicResource AccentColor}" FontSize="11" Margin="0,2,0,0"/>
-                <ProgressBar Value="{Binding TotalProgress}" IsIndeterminate="{Binding IsProgressIndeterminate}" Height="5" Margin="0,5,10,0" Background="#333" BorderThickness="0" Foreground="{DynamicResource AccentColor}"/>
-            </StackPanel>
+            <!-- ──────────────────────────────── -->
+            <!-- VENSTRE: DataGrid                -->
+            <!-- ──────────────────────────────── -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <Button Grid.Column="1" Content="{Binding StartButtonText}" Command="{Binding DownloadCommand}" Width="140">
-                <Button.Style>
-                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                        <Setter Property="ToolTip" Value="Starter nedlasting av valgte elementer i listen"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding StartButtonText}" Value="Avbryt">
-                                <Setter Property="Background" Value="#FF4444"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="ToolTip" Value="Avbryter pågående nedlasting"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                <!-- Kolonneheader-kontekstlinje -->
+                <Border Grid.Row="0" Background="{DynamicResource BgInput}"
+                        BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1"
+                        Padding="10,6">
+                    <Grid>
+                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource TextMuted}"
+                                   Text="INNHOLDSLISTE" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Fjern valgt" Command="{Binding RemoveItemCommand}" Margin="0,0,8,0"
+                                    Style="{StaticResource MenuButtonStyle}" Padding="8,4" FontSize="11"
+                                    ToolTip="Fjern valgt element fra listen"/>
+                            <Button Content="Fjern ferdige" Command="{Binding RemoveFinishedCommand}" Margin="0,0,8,0"
+                                    Style="{StaticResource MenuButtonStyle}" Padding="8,4" FontSize="11"
+                                    ToolTip="Fjern alle elementer med status 'Ferdig'"/>
+                            <Button Content="📁 Åpne mappe" Command="{Binding OpenFolderCommand}"
+                                    Style="{StaticResource MenuButtonStyle}" Padding="8,4" FontSize="11"
+                                    ToolTip="Åpne nedlastingsmappe"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- DataGrid -->
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding DownloadItems}"
+                          SelectedItem="{Binding SelectedGridItem}"
+                          Tag="{Binding}"
+                          AutoGenerateColumns="False"
+                          Background="{DynamicResource BgDark}"
+                          HeadersVisibility="Column"
+                          BorderThickness="0"
+                          RowBackground="{DynamicResource BgDark}"
+                          AlternatingRowBackground="{DynamicResource BgLight}"
+                          Foreground="{DynamicResource TextColor}"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="{DynamicResource BorderColor}"
+                          CanUserAddRows="False"
+                          CanUserDeleteRows="False"
+                          PreviewKeyDown="DataGrid_PreviewKeyDown"
+                          SelectionMode="Single"
+                          VerticalScrollBarVisibility="Auto">
+
+                    <DataGrid.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="Fjern valgt" Command="{Binding RemoveItemCommand}"/>
+                            <MenuItem Header="Fjern alle ferdige" Command="{Binding RemoveFinishedCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="Åpne nedlastningsmappe" Command="{Binding OpenFolderCommand}"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+
+                    <DataGrid.Columns>
+                        <!-- Checkbox -->
+                        <DataGridTemplateColumn Width="38">
+                            <DataGridTemplateColumn.Header>
+                                <CheckBox x:Name="chkSelectAll" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          ToolTip="Velg alle / Fravolg alle"
+                                          Click="SelectAll_Click"/>
+                            </DataGridTemplateColumn.Header>
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Sesong/Ep -->
+                        <DataGridTextColumn Header="Ep." Binding="{Binding SeasonEpisode}" Width="65" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontFamily" Value="Consolas"/>
+                                    <Setter Property="FontSize" Value="11"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="4,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- Tittel -->
+                        <DataGridTextColumn Header="Tittel" Binding="{Binding Title}" Width="*" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="Padding" Value="4,0"/>
+                                    <Setter Property="ToolTip" Value="{Binding FileName}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- Oppløsning -->
+                        <DataGridTemplateColumn Header="Oppløsning" Width="105">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding AvailableResolutions}"
+                                              SelectedItem="{Binding SelectedResolution, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding IsTelevision}"
+                                              Margin="2" Padding="4,2"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Lydspråk -->
+                        <DataGridTemplateColumn Header="Lydspråk" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding AvailableLanguages}"
+                                              SelectedItem="{Binding SelectedLanguage, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding IsTelevision}"
+                                              Margin="2" Padding="4,2"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Kodeks -->
+                        <DataGridTemplateColumn Header="Kodeks" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ComboBox ItemsSource="{Binding AvailableCodecs}"
+                                              SelectedItem="{Binding SelectedCodec, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding IsTelevision}"
+                                              Margin="2" Padding="4,2"
+                                              ToolTip="Velg videokodeks for slutt-filen. 'Ingen rekoding' beholder original stream."/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Status -->
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="140" IsReadOnly="True">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="Padding" Value="4,0"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="Ferdig">
+                                            <Setter Property="Foreground" Value="#6BCB77"/>
+                                        </Trigger>
+                                        <Trigger Property="Text" Value="Feilet">
+                                            <Setter Property="Foreground" Value="#FF6B6B"/>
+                                        </Trigger>
+                                        <Trigger Property="Text" Value="Avbrutt">
+                                            <Setter Property="Foreground" Value="#FFD166"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- Fremdrift -->
+                        <DataGridTemplateColumn Header="Fremdrift" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="4,4">
+                                        <ProgressBar Value="{Binding Progress, Mode=OneWay}"
+                                                     Maximum="100" Height="12"
+                                                     Background="{DynamicResource BorderColor}"
+                                                     BorderThickness="0">
+                                            <ProgressBar.Style>
+                                                <Style TargetType="ProgressBar">
+                                                    <Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Ferdig">
+                                                            <Setter Property="Foreground" Value="#6BCB77"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Feilet">
+                                                            <Setter Property="Foreground" Value="#FF6B6B"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ProgressBar.Style>
+                                        </ProgressBar>
+                                        <TextBlock Text="{Binding Progress, StringFormat={}{0:F0}%}"
+                                                   FontSize="10" HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource TextColor}"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Padding" Value="2,4"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.CellStyle>
+
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="{DynamicResource BgDark}"/>
+                            <Setter Property="MinHeight" Value="34"/>
+                            <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SelectionBg}"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="{DynamicResource BgInput}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+                            <Setter Property="Padding" Value="8,6"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="FontSize" Value="11"/>
+                            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                </DataGrid>
+            </Grid>
+
+            <!-- ──────────────────────────────────── -->
+            <!-- HØYRE: Handlingspanel               -->
+            <!-- ──────────────────────────────────── -->
+            <Border Grid.Column="1"
+                    Background="{DynamicResource BgLight}"
+                    BorderBrush="{DynamicResource BorderColor}"
+                    BorderThickness="1,0,0,0">
+                <Grid Margin="16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Seksjonstekst -->
+                    <TextBlock Grid.Row="0" Text="HANDLINGER"
+                               FontSize="10" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextMuted}"
+                               Margin="0,0,0,12"/>
+
+                    <!-- Start/Avbryt knapp -->
+                    <Button Grid.Row="1"
+                            Content="{Binding StartButtonText}"
+                            Command="{Binding DownloadCommand}"
+                            Height="42"
+                            FontSize="14"
+                            Margin="0,0,0,10">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="ToolTip" Value="Start nedlasting av valgte elementer"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding StartButtonText}" Value="Avbryt">
+                                        <Setter Property="Background" Value="#C0392B"/>
+                                        <Setter Property="ToolTip" Value="Avbryt pågående nedlasting"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <!-- Nedlastingslogg-knapp -->
+                    <Button Grid.Row="2"
+                            Content="📋 Vis nedlastingslogg"
+                            Click="ShowOutputWindow_Click"
+                            Height="36"
+                            FontSize="12"
+                            Style="{StaticResource MenuButtonStyle}"
+                            Margin="0,0,0,16"
+                            ToolTip="Åpne live-loggvindu som viser prosessoutput under nedlasting"/>
+
+                    <!-- Separatorlinje -->
+                    <Rectangle Grid.Row="3" Fill="{DynamicResource BorderColor}" Height="1"
+                               VerticalAlignment="Top"/>
+
+                    <!-- Total fremdrift (bunn) -->
+                    <StackPanel Grid.Row="4" Margin="0,12,0,0">
+                        <TextBlock Text="TOTAL FREMDRIFT" FontSize="10" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextMuted}" Margin="0,0,0,6"/>
+                        <TextBlock Text="{Binding BatchStatusMessage}"
+                                   FontSize="11" Foreground="{DynamicResource AccentColor}"
+                                   TextWrapping="Wrap" Margin="0,0,0,4"/>
+                        <ProgressBar Value="{Binding TotalProgress}"
+                                     IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                     Height="8"
+                                     Background="{DynamicResource BorderColor}"
+                                     BorderThickness="0"
+                                     Foreground="{DynamicResource AccentColor}"
+                                     Margin="0,0,0,6"/>
+                        <TextBlock Text="{Binding TotalProgress, StringFormat={}{0:F0}%}"
+                                   FontSize="11" Foreground="{DynamicResource TextMuted}"
+                                   HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
         </Grid>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- STATUSBAR                                           -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Border Grid.Row="3" Background="{DynamicResource BgInput}"
+                BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,1,0,0">
+            <Grid Margin="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding StatusMessage}"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextMuted}"
+                           TextTrimming="CharacterEllipsis"/>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding DownloadItems.Count, StringFormat={}{0} elementer}"
+                           VerticalAlignment="Center"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMuted}"/>
+            </Grid>
+        </Border>
     </Grid>
 </Window>

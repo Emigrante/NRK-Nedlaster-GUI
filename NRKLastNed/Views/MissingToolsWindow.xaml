@@ -1,0 +1,106 @@
+<Window x:Class="NRKLastNed.Views.MissingToolsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Nødvendige verktøy mangler"
+        Width="560" SizeToContent="Height"
+        MinHeight="380"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource BgDark}"
+        Foreground="{DynamicResource TextColor}"
+        Icon="/Assets/logo.ico"
+        Closing="Window_Closing">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <!-- Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Liste over manglende verktøy -->
+            <RowDefinition Height="Auto"/>
+            <!-- Info tekst -->
+            <RowDefinition Height="Auto"/>
+            <!-- Progress / Handlinger -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- HEADER MED ADVARSEL-IKON                            -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="#FFF3CD" Margin="0,0,14,0" VerticalAlignment="Top">
+                <TextBlock Text="⚠️" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="Nødvendige verktøy mangler" FontSize="17" FontWeight="Bold" Foreground="{DynamicResource TextColor}"/>
+                <TextBlock Text="For at programmet skal fungere, må disse verktøyene ligge i Tools-mappen:" 
+                           Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- KORT MED MANGLENDE VERKTØY                          -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Border Grid.Row="1" Background="{DynamicResource BgLight}" BorderBrush="{DynamicResource BorderColor}" 
+                BorderThickness="1" CornerRadius="6" Padding="14,10" Margin="0,0,0,16">
+            <ItemsControl x:Name="icMissingTools">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="0,5">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="❌" FontSize="13" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" Foreground="#FF6B6B"/>
+                                <TextBlock Text="{Binding Description}" FontSize="11" Foreground="{DynamicResource TextMuted}"/>
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- FORKLARING OG SPØRSMÅL                              -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,18">
+            <TextBlock Text="Disse verktøyene kreves for å laste ned og bearbeide innhold fra NRK."
+                       Foreground="{DynamicResource TextColor}" FontSize="12.5" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,6"/>
+            <TextBlock Text="Vil du at programmet skal laste ned og installere de manglende verktøyene automatisk nå?"
+                       Foreground="{DynamicResource TextMuted}" FontSize="12" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- ═══════════════════════════════════════════════════ -->
+        <!-- KNAPPER ELLER FREMDRIFTSPANEL                       -->
+        <!-- ═══════════════════════════════════════════════════ -->
+        <Grid Grid.Row="3">
+            <!-- Handlingsknapper -->
+            <StackPanel x:Name="pnlActionButtons" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="btnCancel" Content="Ikke nå / Avbryt" Click="BtnCancel_Click"
+                        Style="{StaticResource MenuButtonStyle}" Padding="16,8" Margin="0,0,10,0"
+                        ToolTip="Avbryt automatisk installasjon"/>
+                <Button x:Name="btnDownload" Content="Last ned automatisk" Click="BtnDownload_Click"
+                        Padding="18,8" ToolTip="Last ned manglende verktøy automatisk fra offisielle kilder"/>
+            </StackPanel>
+
+            <!-- Fremdrift under nedlasting -->
+            <StackPanel x:Name="pnlProgress" Visibility="Collapsed" Margin="0,4,0,0">
+                <ProgressBar x:Name="pbProgress" Height="8" Background="{DynamicResource BorderColor}" 
+                             Foreground="{DynamicResource AccentColor}" BorderThickness="0" Margin="0,0,0,8"/>
+                <Grid>
+                    <TextBlock x:Name="txtProgress" Text="Starter nedlasting..." FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentColor}" VerticalAlignment="Center"/>
+                    <Button x:Name="btnDone" Content="Ferdig! Fortsett" Click="BtnDone_Click"
+                            HorizontalAlignment="Right" Padding="16,6" Visibility="Collapsed"/>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

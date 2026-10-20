@@ -20,11 +20,9 @@ namespace NRKLastNed.Mac.Views
         {
             var settingsWindow = new SettingsWindow();
             // Vi bruker ShowDialog med 'this' som parameter for å sette eier
-            var result = await settingsWindow.ShowDialog<bool?>(this);
-            if (result == true)
-            {
-                _vm.RefreshSettings();
-            }
+            await settingsWindow.ShowDialog<bool?>(this);
+            _vm.RefreshSettings();
+            await _vm.CheckAppUpdateSilentAsync();
         }
 
         private async void OpenAbout_Click(object sender, RoutedEventArgs e)

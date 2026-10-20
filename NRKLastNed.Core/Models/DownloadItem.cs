@@ -11,14 +11,24 @@ namespace NRKLastNed.Core.Models
         private string _fileName = "";
         private string _selectedResolution = "best";
         private string _selectedLanguage = "Norsk";
+        private string _selectedCodec = VideoCodecs.H264;
         private ObservableCollection<string> _availableResolutions;
         private ObservableCollection<string> _availableLanguages;
+        private ObservableCollection<string> _availableCodecs;
         private bool _isTelevision;
+        private bool _isSelected = true;
 
         public string Url { get; set; } = "";
         public string Title { get; set; } = "";
+        public string SeriesTitle { get; set; } = "";
+        public string EpisodeTitle { get; set; } = "";
         public string SeasonEpisode { get; set; } = ""; // F.eks "S01E01"
-        public bool IsSelected { get; set; } = true; // For checkbox i listen
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { _isSelected = value; OnPropertyChanged(); }
+        }
 
         public bool IsTelevision
         {
@@ -41,7 +51,15 @@ namespace NRKLastNed.Core.Models
         public string SelectedResolution
         {
             get => _selectedResolution;
-            set { _selectedResolution = value; OnPropertyChanged(); }
+            set
+            {
+                if (_selectedResolution != value)
+                {
+                    _selectedResolution = value;
+                    OnPropertyChanged();
+                    UpdateFileName();
+                }
+            }
         }
 
         public string SelectedLanguage
@@ -50,10 +68,38 @@ namespace NRKLastNed.Core.Models
             set { _selectedLanguage = value; OnPropertyChanged(); }
         }
 
+        public ObservableCollection<string> AvailableCodecs
+        {
+            get => _availableCodecs;
+            set { _availableCodecs = value; OnPropertyChanged(); }
+        }
+
+        public string SelectedCodec
+        {
+            get => _selectedCodec;
+            set
+            {
+                if (_selectedCodec != value)
+                {
+                    _selectedCodec = value;
+                    OnPropertyChanged();
+                    UpdateFileName();
+                }
+            }
+        }
+
         public string FileName
         {
             get => _fileName;
             set { _fileName = value; OnPropertyChanged(); }
+        }
+
+        /// <summary>
+        /// Oppdaterer det genererte scenefilnavnet basert på nåværende metadata og brukerens valg.
+        /// </summary>
+        public void UpdateFileName()
+        {
+            FileName = Services.FileNameFormatter.BuildOutputFileName(this);
         }
 
         public string Status
@@ -80,6 +126,9 @@ namespace NRKLastNed.Core.Models
                 "Dansk",
                 "Engelsk"
             };
+
+            // Kodek-valg (kun relevant for TV-elementer)
+            _availableCodecs = new ObservableCollection<string>(VideoCodecs.All);
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

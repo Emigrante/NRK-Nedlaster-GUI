@@ -34,6 +34,9 @@ namespace NRKLastNed.Core.Services
         private bool _isIgnoringCurrentFile = false;
         private double _maxReportedPercent = 0;
         private double _lastLoggedPercent = -1;
+        private int _lastLoggedDecade = 0;
+        private bool _hasLoggedMerger = false;
+        private string _lastObservedSpeed = "";
 
         public YtDlpService(AppSettings? settings = null, IPlatformService? platform = null)
         {
@@ -56,6 +59,13 @@ namespace NRKLastNed.Core.Services
             {
                 missingTool = _ffmpegPath;
                 LogService.Log($"Mangler verktoy: {_ffmpegPath}", LogLevel.Error, _settings);
+                return false;
+            }
+            string ffprobePath = _platform.GetToolPath("ffprobe");
+            if (!File.Exists(ffprobePath))
+            {
+                missingTool = ffprobePath;
+                LogService.Log($"Mangler verktoy: {ffprobePath}", LogLevel.Error, _settings);
                 return false;
             }
             return true;
@@ -351,8 +361,48 @@ namespace NRKLastNed.Core.Services
 
             string rawTitle = root.TryGetProperty("title", out var tProp) ? (tProp.GetString() ?? "Ukjent tittel") : "Ukjent tittel";
             string series = root.TryGetProperty("series", out var sProp) ? (sProp.GetString() ?? "") : "";
+            string episodeJson = root.TryGetProperty("episode", out var epProp) ? (epProp.GetString() ?? "") : "";
             int? seasonNum = root.TryGetProperty("season_number", out var snProp) && snProp.TryGetInt32(out int sVal) ? sVal : null;
             int? episodeNum = root.TryGetProperty("episode_number", out var enProp) && enProp.TryGetInt32(out int eVal) ? eVal : null;
+
+            // Fallback for sesong og episode hvis yt-dlp ikke ga feltene direkte
+            if (!seasonNum.HasValue || !episodeNum.HasValue)
+            {
+                var seMatch = Regex.Match(rawTitle, @"[Ss](\d{1,2})[Ee](\d{1,2})");
+                if (!seMatch.Success && !string.IsNullOrEmpty(url))
+                    seMatch = Regex.Match(url, @"[Ss](\d{1,2})[Ee](\d{1,2})");
+
+                if (!seMatch.Success)
+                    seMatch = Regex.Match(rawTitle, @"(?:Sesong|S)\s*(\d+).*?(?:Episode|E)\s*(\d+)", RegexOptions.IgnoreCase);
+
+                if (!seMatch.Success && !string.IsNullOrEmpty(url))
+                    seMatch = Regex.Match(url, @"sesong[/-](\d+)[/-]episode[/-](\d+)", RegexOptions.IgnoreCase);
+
+                if (seMatch.Success)
+                {
+                    if (!seasonNum.HasValue && int.TryParse(seMatch.Groups[1].Value, out int sParsed))
+                        seasonNum = sParsed;
+                    if (!episodeNum.HasValue && int.TryParse(seMatch.Groups[2].Value, out int eParsed))
+                        episodeNum = eParsed;
+
+                    if (string.IsNullOrEmpty(series) && seMatch.Index > 0)
+                    {
+                        series = rawTitle[..seMatch.Index].Trim(' ', '-', ':', '.');
+                    }
+                }
+            }
+
+            if (!episodeNum.HasValue)
+            {
+                var epOnlyMatch = Regex.Match(rawTitle, @"^(?:Episode\s*|E)(\d{1,3})", RegexOptions.IgnoreCase);
+                if (!epOnlyMatch.Success)
+                    epOnlyMatch = Regex.Match(rawTitle, @"^(\d{1,3})\.\s+");
+
+                if (epOnlyMatch.Success && int.TryParse(epOnlyMatch.Groups[1].Value, out int eParsed))
+                {
+                    episodeNum = eParsed;
+                }
+            }
 
             string formattedTitle = rawTitle;
             string seasonEpisodeStr = "";
@@ -426,16 +476,64 @@ namespace NRKLastNed.Core.Services
                 itemIsTelevision = false;
             }
 
+            string seriesTitle = "";
+            string episodeTitle = "";
+
+            if (!itemIsTelevision)
+            {
+                // Radio / Podkast: Trekk ut programnavn og eventuelt episodenavn
+                seriesTitle = !string.IsNullOrWhiteSpace(series) ? series : "";
+                if (string.IsNullOrWhiteSpace(seriesTitle))
+                {
+                    if (root.TryGetProperty("channel", out var chProp) && chProp.GetString() is { Length: > 0 } ch)
+                        seriesTitle = ch;
+                    else if (root.TryGetProperty("uploader", out var upProp) && upProp.GetString() is { Length: > 0 } up)
+                        seriesTitle = up;
+                    else if (rawTitle.Contains(" - "))
+                    {
+                        var parts = rawTitle.Split(new[] { " - " }, 2, StringSplitOptions.TrimEntries);
+                        seriesTitle = parts[0];
+                        episodeTitle = parts[1];
+                    }
+                    else
+                    {
+                        seriesTitle = rawTitle;
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(episodeTitle))
+                {
+                    string candidate = !string.IsNullOrWhiteSpace(episodeJson) ? episodeJson : CleanEpisodeTitle(rawTitle, seriesTitle);
+                    if (!string.Equals(candidate, seriesTitle, StringComparison.OrdinalIgnoreCase))
+                    {
+                        episodeTitle = candidate;
+                    }
+                }
+            }
+            else
+            {
+                // TV / Film
+                seriesTitle = !string.IsNullOrWhiteSpace(series) ? series : rawTitle;
+                string cleanEp = !string.IsNullOrWhiteSpace(episodeJson) ? episodeJson : CleanEpisodeTitle(rawTitle, seriesTitle);
+                if (!string.Equals(cleanEp, seriesTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    episodeTitle = cleanEp;
+                }
+            }
+
             string detectedLang = DetectLanguage(root);
 
             var item = new DownloadItem
             {
                 Url = url,
                 Title = formattedTitle,
+                SeriesTitle = seriesTitle,
+                EpisodeTitle = episodeTitle,
                 SeasonEpisode = seasonEpisodeStr,
                 IsTelevision = itemIsTelevision,
                 SelectedResolution = itemIsTelevision ? _settings.DefaultResolution : "best",
-                SelectedLanguage = detectedLang
+                SelectedLanguage = detectedLang,
+                SelectedCodec = itemIsTelevision ? _settings.DefaultCodec : VideoCodecs.None
             };
 
             var resolutions = new HashSet<string>();
@@ -479,6 +577,7 @@ namespace NRKLastNed.Core.Services
                 item.SelectedResolution = "best";
             }
 
+            item.UpdateFileName();
             return item;
         }
 
@@ -573,9 +672,17 @@ namespace NRKLastNed.Core.Services
         {
             string clean = rawTitle;
 
-            if (clean.StartsWith(seriesName, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(seriesName) && clean.StartsWith(seriesName, StringComparison.OrdinalIgnoreCase))
             {
                 clean = clean.Substring(seriesName.Length);
+            }
+            else if (clean.Contains(" - "))
+            {
+                var parts = clean.Split(new[] { " - " }, 2, StringSplitOptions.TrimEntries);
+                if (!string.IsNullOrEmpty(seriesName) && (seriesName.StartsWith(parts[0], StringComparison.OrdinalIgnoreCase) || parts[0].StartsWith(seriesName, StringComparison.OrdinalIgnoreCase)))
+                {
+                    clean = parts[1];
+                }
             }
 
             clean = LeadingSeparatorRegex().Replace(clean, "");
@@ -634,8 +741,27 @@ namespace NRKLastNed.Core.Services
             return outputFolder;
         }
 
-        public async Task DownloadItemAsync(DownloadItem item, IProgress<string> progressText, IProgress<double> progressPercent, CancellationToken token)
+        public Task DownloadItemAsync(DownloadItem item, IProgress<string> progressText, IProgress<double> progressPercent, CancellationToken token)
+            => DownloadItemAsync(item, progressText, progressPercent, null, null, null, token, 0, 0);
+
+        public Task DownloadItemAsync(DownloadItem item, IProgress<string> progressText, IProgress<double> progressPercent, IProgress<string>? rawOutputProgress, CancellationToken token)
+            => DownloadItemAsync(item, progressText, progressPercent, rawOutputProgress, null, null, token, 0, 0);
+
+        public async Task DownloadItemAsync(
+            DownloadItem item,
+            IProgress<string> progressText,
+            IProgress<double> progressPercent,
+            IProgress<string>? rawOutputProgress,
+            IProgress<double>? downloadStepProgress,
+            IProgress<double>? processingStepProgress,
+            CancellationToken token,
+            int fileIndex = 0,
+            int totalFiles = 0)
         {
+            var activeSettings = AppSettings.Load();
+            _settings.DownloadLogLevel = activeSettings.DownloadLogLevel;
+            _settings.UseHardwareAcceleration = activeSettings.UseHardwareAcceleration;
+
             string outputFolder = GetTargetOutputFolder(item.IsTelevision);
 
             string tempPath = _settings.UseSystemTemp ? Path.Combine(Path.GetTempPath(), "NRKDownload") : _settings.TempFolder;
@@ -644,16 +770,22 @@ namespace NRKLastNed.Core.Services
             if (!Directory.Exists(tempPath)) Directory.CreateDirectory(tempPath);
             if (!Directory.Exists(outputFolder)) Directory.CreateDirectory(outputFolder);
 
-            string fileNameBase = item.Title;
-
-            string fileExtension = item.IsTelevision ? "mkv" : "mp3";
-            string resTag = (item.IsTelevision && item.SelectedResolution != "best") ? $" - {item.SelectedResolution}p" : "";
-            string finalFileName = SanitizeFileName($"{fileNameBase}{resTag}.{fileExtension}");
+            string finalFileName = FileNameFormatter.BuildOutputFileName(item);
+            item.FileName = finalFileName;
             string fullOutputPath = Path.Combine(tempPath, finalFileName);
-            string cleanupBasePattern = SanitizeFileName(fileNameBase);
+            string cleanupBasePattern = Path.GetFileNameWithoutExtension(finalFileName);
 
             string formatSelector = item.SelectedResolution == "best" ? "res" : $"res:{item.SelectedResolution}";
             string langCode = GetLanguageCode(item.SelectedLanguage);
+
+            downloadStepProgress?.Report(0);
+            processingStepProgress?.Report(0);
+
+            // Rekoding kjøres som eget FFmpeg-steg etter nedlasting. Nedlastingen får da 0-50 % av totalfremdriften.
+            bool shouldReencode = item.IsTelevision && VideoCodecs.IsReencoding(item.SelectedCodec);
+            IProgress<double> downloadPercent = shouldReencode
+                ? new ScaledProgress(progressPercent, 0, DownloadShareWhenReencoding)
+                : progressPercent;
 
             var startInfo = new ProcessStartInfo
             {
@@ -691,6 +823,9 @@ namespace NRKLastNed.Core.Services
             {
                 startInfo.ArgumentList.Add("-f");
                 startInfo.ArgumentList.Add("bestaudio");
+                startInfo.ArgumentList.Add("-x");
+                startInfo.ArgumentList.Add("--audio-format");
+                startInfo.ArgumentList.Add("mp3");
                 startInfo.ArgumentList.Add("--no-mtime");
             }
 
@@ -707,6 +842,14 @@ namespace NRKLastNed.Core.Services
             _isIgnoringCurrentFile = false;
             _maxReportedPercent = 0;
             _lastLoggedPercent = -1;
+            _lastLoggedDecade = 0;
+            _hasLoggedMerger = false;
+            _lastObservedSpeed = "";
+
+            string filePrefix = (fileIndex > 0 && totalFiles > 1) ? $"• [Fil {fileIndex}/{totalFiles}] " : "• ";
+            rawOutputProgress?.Report($"{filePrefix}Laster ned fra NRK: {item.Title}");
+
+            var downloadStopwatch = Stopwatch.StartNew();
 
             using (var process = new Process { StartInfo = startInfo })
             {
@@ -717,16 +860,24 @@ namespace NRKLastNed.Core.Services
                         if (!string.IsNullOrEmpty(e.Data))
                         {
                             DetectMediaFile(e.Data);
-                            ParseProgress(e.Data, progressText, progressPercent);
+                            ParseProgress(e.Data, progressText, downloadPercent, downloadStepProgress, rawOutputProgress);
                         }
                     };
 
                     process.ErrorDataReceived += (sender, e) =>
                     {
-                        if (!string.IsNullOrEmpty(e.Data) && _settings.LogLevel == LogLevel.Debug)
+                        if (!string.IsNullOrEmpty(e.Data))
                         {
-                            if (!e.Data.StartsWith("[download]") && !e.Data.StartsWith("[info]"))
-                                LogService.Log($"yt-dlp info: {e.Data.Trim()}", LogLevel.Debug, _settings);
+                            string trimmed = e.Data.Trim();
+                            if (trimmed.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
+                            {
+                                rawOutputProgress?.Report($"✖ Feil under nedlasting: {trimmed}");
+                                LogService.Log($"yt-dlp feil: {trimmed}", LogLevel.Error, _settings);
+                            }
+                            else if (_settings.LogLevel == LogLevel.Debug && !trimmed.StartsWith("[download]") && !trimmed.StartsWith("[info]"))
+                            {
+                                LogService.Log($"yt-dlp info: {trimmed}", LogLevel.Debug, _settings);
+                            }
                         }
                     };
 
@@ -758,6 +909,36 @@ namespace NRKLastNed.Core.Services
 
             if (token.IsCancellationRequested) return;
 
+            downloadStopwatch.Stop();
+            downloadStepProgress?.Report(100);
+
+            string downloadDurationStr = FormatDuration(downloadStopwatch.Elapsed);
+            string speedReport = !string.IsNullOrEmpty(_lastObservedSpeed) ? $" (snitt {_lastObservedSpeed})" : "";
+            rawOutputProgress?.Report($"  ↳ Nedlastet på {downloadDurationStr}{speedReport}");
+
+            if (shouldReencode && File.Exists(fullOutputPath))
+            {
+                try
+                {
+                    processingStepProgress?.Report(0);
+                    await ReencodeVideoAsync(fullOutputPath, item.SelectedCodec, progressText, progressPercent, processingStepProgress, rawOutputProgress, token);
+                    processingStepProgress?.Report(100);
+                }
+                catch (OperationCanceledException)
+                {
+                    LogService.Log($"Rekoding avbrutt: {item.Title}", LogLevel.Info, _settings);
+                    await Task.Delay(500);
+                    foreach (var file in Directory.GetFiles(tempPath, $"{cleanupBasePattern}*"))
+                        try { File.Delete(file); } catch { }
+                    throw;
+                }
+            }
+            else
+            {
+                processingStepProgress?.Report(100);
+                progressText.Report("Ferdigstiller fil...");
+            }
+
             if (File.Exists(fullOutputPath))
             {
                 string dest = Path.Combine(outputFolder, finalFileName);
@@ -773,20 +954,253 @@ namespace NRKLastNed.Core.Services
                 if (moved)
                 {
                     LogService.Log($"Ferdig! Lagret til: {dest}", LogLevel.Info, _settings);
+                    downloadStepProgress?.Report(100);
+                    processingStepProgress?.Report(100);
                     progressText.Report($"Ferdig");
                     progressPercent.Report(100);
+                    rawOutputProgress?.Report($"✓ Fullført: {finalFileName}");
                 }
                 else
                 {
                     LogService.Log($"Kunne ikke flytte fil til {dest}. Fil last?", LogLevel.Error, _settings);
+                    rawOutputProgress?.Report("✖ Feil: Kunne ikke flytte ferdig fil til lagringsmappe.");
                     throw new Exception("Fil last, kunne ikke flytte til output.");
                 }
             }
             else
             {
                 LogService.Log($"Fant ikke filen etter nedlasting: {fullOutputPath}", LogLevel.Error, _settings);
+                rawOutputProgress?.Report($"✖ Feil: Fant ikke filen etter nedlasting ({fullOutputPath}).");
                 throw new Exception("Fil ikke funnet etter nedlasting.");
             }
+        }
+
+        private const double DownloadShareWhenReencoding = 50;
+
+        /// <summary>
+        /// Rekoder første videostrøm med FFmpeg ved bruk av maskinvareakselerasjon (GPU) dersom tilgjengelig,
+        /// med automatisk fallback til CPU ved feil. Lyd, undertekster og vedlegg kopieres uendret.
+        /// Erstatter inputFile med resultatet når rekodingen lykkes.
+        /// </summary>
+        private async Task ReencodeVideoAsync(string inputFile, string codec, IProgress<string> progressText, IProgress<double> progressPercent, IProgress<double>? processingStepProgress, IProgress<string>? rawOutputProgress, CancellationToken token)
+        {
+            var encoderInfo = HardwareEncoderService.GetEncoder(codec, _settings.UseHardwareAcceleration, _ffmpegPath);
+            bool success = await TryRunFfmpegEncodeAsync(inputFile, codec, encoderInfo, progressText, progressPercent, processingStepProgress, rawOutputProgress, token);
+
+            if (!success && encoderInfo.IsHardwareAccelerated && !token.IsCancellationRequested)
+            {
+                var cpuEncoder = HardwareEncoderService.GetCpuEncoder(codec);
+                LogService.Log($"GPU-koding feilet for {codec}. Bytter automatisk til CPU ({cpuEncoder.DisplayName})...", LogLevel.Info, _settings);
+                rawOutputProgress?.Report($"⚠ GPU-rekoding feilet. Bytter automatisk til prosessor ({cpuEncoder.DisplayName})...");
+
+                success = await TryRunFfmpegEncodeAsync(inputFile, codec, cpuEncoder, progressText, progressPercent, processingStepProgress, rawOutputProgress, token);
+            }
+
+            if (!success && !token.IsCancellationRequested)
+            {
+                LogService.Log($"Rekoding feilet for {inputFile}. Beholder originalfilen.", LogLevel.Error, _settings);
+                rawOutputProgress?.Report("⚠ Rekoding feilet. Beholder originalfilen uten omkoding.");
+            }
+        }
+
+        private async Task<bool> TryRunFfmpegEncodeAsync(string inputFile, string codec, HardwareEncoderInfo encoderInfo, IProgress<string> progressText, IProgress<double> progressPercent, IProgress<double>? processingStepProgress, IProgress<string>? rawOutputProgress, CancellationToken token)
+        {
+            string codecName = VideoCodecs.ShortName(codec);
+            string encodedFile = Path.Combine(
+                Path.GetDirectoryName(inputFile) ?? "",
+                $"{Path.GetFileNameWithoutExtension(inputFile)}.rekoding{Path.GetExtension(inputFile)}");
+
+            try
+            {
+                if (File.Exists(encodedFile)) File.Delete(encodedFile);
+            }
+            catch { }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
+            };
+
+            foreach (var arg in new[] { "-hide_banner", "-nostdin", "-y" })
+                startInfo.ArgumentList.Add(arg);
+
+            if (encoderInfo.DecoderArgs != null && encoderInfo.DecoderArgs.Length > 0)
+            {
+                foreach (var arg in encoderInfo.DecoderArgs)
+                    startInfo.ArgumentList.Add(arg);
+            }
+
+            foreach (var arg in new[] { "-i", inputFile, "-map", "0", "-c", "copy" })
+                startInfo.ArgumentList.Add(arg);
+
+            foreach (var arg in encoderInfo.EncoderArgs)
+                startInfo.ArgumentList.Add(arg);
+            foreach (var arg in new[] { "-nostats", "-progress", "pipe:1", encodedFile })
+                startInfo.ArgumentList.Add(arg);
+
+            LogService.Log($"Starter rekoding: {encoderInfo.DisplayName} for {Path.GetFileName(inputFile)}", LogLevel.Info, _settings);
+            LogService.Log($"Kommando: ffmpeg {string.Join(" ", startInfo.ArgumentList)}", LogLevel.Debug, _settings);
+
+            string hwInfo = encoderInfo.IsHardwareAccelerated
+                ? $"maskinvareakselerasjon ({encoderInfo.DisplayName})"
+                : $"prosessor ({encoderInfo.DisplayName})";
+            progressText.Report($"Koder til {codecName} ({encoderInfo.DisplayName})...");
+            progressPercent.Report(DownloadShareWhenReencoding);
+            rawOutputProgress?.Report($"• Rekoder til {codecName} med {hwInfo}...");
+
+            var transcodeStopwatch = Stopwatch.StartNew();
+            double durationSeconds = 0;
+            int lastReportedPercent = -1;
+            int lastReportedDecade = 0;
+            string speed = "";
+            string lastStableSpeed = "";
+            var recentErrors = new Queue<string>();
+
+            using (var process = new Process { StartInfo = startInfo })
+            {
+                process.ErrorDataReceived += (sender, e) =>
+                {
+                    if (string.IsNullOrEmpty(e.Data)) return;
+
+                    if (durationSeconds <= 0)
+                    {
+                        var durationMatch = FfmpegDurationRegex().Match(e.Data);
+                        if (durationMatch.Success && TimeSpan.TryParse(durationMatch.Groups[1].Value, CultureInfo.InvariantCulture, out var duration))
+                            durationSeconds = duration.TotalSeconds;
+                    }
+
+                    lock (recentErrors)
+                    {
+                        recentErrors.Enqueue(e.Data);
+                        if (recentErrors.Count > 10) recentErrors.Dequeue();
+                    }
+
+                    // Tekniske detaljer logges til disk/debug-logg, ikke til brukerens loggvindu
+                    if (_settings.LogLevel == LogLevel.Debug)
+                    {
+                        LogService.Log($"ffmpeg: {e.Data.Trim()}", LogLevel.Debug, _settings);
+                    }
+                };
+
+                // -progress pipe:1 skriver nøkkel=verdi-linjer på stdout
+                process.OutputDataReceived += (sender, e) =>
+                {
+                    if (string.IsNullOrEmpty(e.Data)) return;
+
+                    int separator = e.Data.IndexOf('=');
+                    if (separator <= 0) return;
+                    string key = e.Data[..separator];
+                    string value = e.Data[(separator + 1)..].Trim();
+
+                    if (key == "speed")
+                    {
+                        speed = value;
+                        if (!string.IsNullOrWhiteSpace(value) && value != "N/A")
+                        {
+                            lastStableSpeed = value;
+                        }
+                    }
+                    else if (key == "out_time_us" && durationSeconds > 0 && long.TryParse(value, out long outTimeUs))
+                    {
+                        int encodePercent = (int)Math.Clamp(outTimeUs / 1_000_000.0 / durationSeconds * 100, 0, 100);
+                        if (encodePercent == lastReportedPercent) return;
+                        lastReportedPercent = encodePercent;
+
+                        processingStepProgress?.Report(encodePercent);
+                        double total = DownloadShareWhenReencoding + encodePercent * (99 - DownloadShareWhenReencoding) / 100.0;
+                        progressPercent.Report(total);
+                        string speedInfo = !string.IsNullOrEmpty(speed) ? $" {speed}" : "";
+                        progressText.Report($"Koder til {codecName}... ({encodePercent}%){speedInfo}");
+
+                        if (_settings.IsDebugDownloadLog)
+                        {
+                            int currentDecade = (encodePercent / 10) * 10;
+                            if (currentDecade > lastReportedDecade && currentDecade < 100)
+                            {
+                                lastReportedDecade = currentDecade;
+                                rawOutputProgress?.Report($"  ↳ Rekoding til {codecName}: {currentDecade}%{speedInfo}");
+                            }
+                        }
+                    }
+                };
+
+                using (token.Register(() => { try { if (!process.HasExited) process.Kill(true); } catch { } }))
+                {
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+                    await process.WaitForExitAsync(token);
+                }
+
+                if (token.IsCancellationRequested)
+                {
+                    try { if (File.Exists(encodedFile)) File.Delete(encodedFile); } catch { }
+                    throw new OperationCanceledException(token);
+                }
+
+                if (process.ExitCode != 0)
+                {
+                    try { if (File.Exists(encodedFile)) File.Delete(encodedFile); } catch { }
+                    string details;
+                    lock (recentErrors) details = string.Join(" | ", recentErrors);
+                    LogService.Log($"Koding feilet med {encoderInfo.DisplayName} (kode {process.ExitCode}): {details}", LogLevel.Error, _settings);
+                    return false;
+                }
+            }
+
+            bool replaced = false;
+            for (int i = 0; i < 5; i++)
+            {
+                try
+                {
+                    if (File.Exists(inputFile)) File.Delete(inputFile);
+                    File.Move(encodedFile, inputFile);
+                    replaced = true;
+                    break;
+                }
+                catch when (i < 4)
+                {
+                    await Task.Delay(400);
+                }
+            }
+
+            if (!replaced)
+            {
+                LogService.Log($"Kunne ikke erstatte originalfil med rekodet fil.", LogLevel.Error, _settings);
+                return false;
+            }
+
+            transcodeStopwatch.Stop();
+            string transcodeDuration = FormatDuration(transcodeStopwatch.Elapsed);
+            string speedSummary = !string.IsNullOrEmpty(lastStableSpeed) ? $" ({lastStableSpeed} hastighet)" : "";
+            rawOutputProgress?.Report($"  ↳ Transkodet til {codecName} på {transcodeDuration}{speedSummary} med {encoderInfo.DisplayName}");
+            LogService.Log($"Rekoding ferdig: {Path.GetFileName(inputFile)} med {encoderInfo.DisplayName} på {transcodeDuration}{speedSummary}", LogLevel.Info, _settings);
+            return true;
+        }
+
+        /// <summary>
+        /// Skalerer 0-100 inn i et delintervall av totalfremdriften, uten ekstra dispatch.
+        /// </summary>
+        private sealed class ScaledProgress : IProgress<double>
+        {
+            private readonly IProgress<double> _inner;
+            private readonly double _offset;
+            private readonly double _share;
+
+            public ScaledProgress(IProgress<double> inner, double offset, double share)
+            {
+                _inner = inner;
+                _offset = offset;
+                _share = share;
+            }
+
+            public void Report(double value) => _inner.Report(_offset + value * _share / 100.0);
         }
 
         internal void DetectMediaFile(string line)
@@ -801,10 +1215,11 @@ namespace NRKLastNed.Core.Services
                 }
                 _isIgnoringCurrentFile = false;
                 _mediaFileCounter++;
+                _lastLoggedPercent = -1;
             }
         }
 
-        internal void ParseProgress(string line, IProgress<string> text, IProgress<double> percent)
+        internal void ParseProgress(string line, IProgress<string> text, IProgress<double> percent, IProgress<double>? downloadStepProgress = null, IProgress<string>? rawOutputProgress = null)
         {
             bool isDownloadLine = line.StartsWith("[download]");
 
@@ -822,10 +1237,41 @@ namespace NRKLastNed.Core.Services
 
                 if (calculatedPercent > 99) calculatedPercent = 99;
 
-                if (Math.Abs(calculatedPercent - _lastLoggedPercent) >= 1.0 || rawPercent >= 100)
+                downloadStepProgress?.Report(calculatedPercent);
+
+                int currentWhole = (int)Math.Floor(calculatedPercent);
+                int lastWhole = _lastLoggedPercent >= 0 ? (int)Math.Floor(_lastLoggedPercent) : -1;
+
+                if (currentWhole != lastWhole || rawPercent >= 100)
                 {
                     percent.Report(calculatedPercent);
-                    text.Report($"Laster ned... ({calculatedPercent:0}%)");
+
+                    var speedMatch = DownloadSpeedRegex().Match(line);
+                    var etaMatch = DownloadEtaRegex().Match(line);
+                    string speed = speedMatch.Success ? speedMatch.Groups[1].Value : "";
+                    string eta = etaMatch.Success ? etaMatch.Groups[1].Value : "";
+
+                    if (!string.IsNullOrEmpty(speed))
+                    {
+                        _lastObservedSpeed = speed;
+                    }
+
+                    string statusText = $"Laster ned... ({currentWhole}%)";
+                    if (!string.IsNullOrEmpty(speed)) statusText += $" ved {speed}";
+                    if (!string.IsNullOrEmpty(eta) && eta != "00:00") statusText += $" [ETA {eta}]";
+                    text.Report(statusText);
+
+                    if (_settings.IsDebugDownloadLog)
+                    {
+                        int currentDecade = (currentWhole / 10) * 10;
+                        if (currentDecade > _lastLoggedDecade && currentDecade > 0 && currentDecade <= 100)
+                        {
+                            _lastLoggedDecade = currentDecade;
+                            string speedInfo = !string.IsNullOrEmpty(speed) ? $" ved {speed}" : "";
+                            string etaInfo = !string.IsNullOrEmpty(eta) && eta != "00:00" ? $" (ETA {eta})" : "";
+                            rawOutputProgress?.Report($"  ↳ Nedlasting: {currentDecade}%{speedInfo}{etaInfo}");
+                        }
+                    }
 
                     if (_settings.LogLevel == LogLevel.Debug && isDownloadLine)
                     {
@@ -839,14 +1285,54 @@ namespace NRKLastNed.Core.Services
 
             if (line.Contains("[Merger]") || line.Contains("Merging formats") || line.Contains("[VideoRemuxer]") || line.Contains("Writing video"))
             {
-                text.Report("Ferdigstiller fil...");
-                percent.Report(99);
+                if (!_hasLoggedMerger)
+                {
+                    _hasLoggedMerger = true;
+                    text.Report("Klargjør video og undertekster...");
+                    percent.Report(99);
+                    if (_settings.IsDebugDownloadLog)
+                    {
+                        rawOutputProgress?.Report("• Klargjør video og undertekster...");
+                    }
+                }
                 LogService.Log($"Ferdigstiller: {line.Trim()}", LogLevel.Debug, _settings);
+                return;
             }
+
+            // Unngå IT-debug og fragment-støy i loggvinduet. Kun reelle feil vises i UI.
+            if (line.StartsWith("ERROR:", StringComparison.OrdinalIgnoreCase))
+            {
+                rawOutputProgress?.Report($"✖ Feil: {line.Trim()}");
+                LogService.Log($"yt-dlp feil: {line.Trim()}", LogLevel.Error, _settings);
+            }
+            else if (_settings.LogLevel == LogLevel.Debug && !line.Contains("(frag ", StringComparison.OrdinalIgnoreCase))
+            {
+                LogService.Log($"yt-dlp: {line.Trim()}", LogLevel.Debug, _settings);
+            }
+        }
+
+        private static string FormatDuration(TimeSpan ts)
+        {
+            if (ts.TotalSeconds < 1)
+                return "< 1s";
+            if (ts.TotalSeconds < 60)
+                return $"{(int)Math.Round(ts.TotalSeconds)}s";
+            if (ts.TotalHours < 1)
+                return $"{(int)ts.TotalMinutes}m {ts.Seconds}s";
+            return $"{(int)ts.TotalHours}t {ts.Minutes}m {ts.Seconds}s";
         }
 
         [GeneratedRegex(@"\[download\]\s+(\d+(\.\d+)?)%")]
         private static partial Regex DownloadPercentRegex();
+
+        [GeneratedRegex(@"at\s+([^\s]+)")]
+        private static partial Regex DownloadSpeedRegex();
+
+        [GeneratedRegex(@"ETA\s+([^\s]+)")]
+        private static partial Regex DownloadEtaRegex();
+
+        [GeneratedRegex(@"Duration:\s*(\d+:\d{2}:\d{2}(\.\d+)?)")]
+        private static partial Regex FfmpegDurationRegex();
 
         [GeneratedRegex(@"^[\s-–]+")]
         private static partial Regex LeadingSeparatorRegex();
