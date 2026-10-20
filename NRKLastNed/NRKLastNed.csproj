@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\logo.ico" />
+    <EmbeddedResource Include="Assets\cache.dat" />
   </ItemGroup>
 
   <ItemGroup>

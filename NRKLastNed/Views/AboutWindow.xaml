@@ -40,7 +40,9 @@
             <TextBlock Text="Dette programmet er ikke tilknyttet eller godkjent av NRK. All nedlasting er på eget ansvar og må kun skje i henhold til gjeldende lovverk og NRKs bruksvilkår." 
                        TextWrapping="Wrap" FontStyle="Italic" Foreground="{DynamicResource TextMuted}" Margin="0,0,0,20"/>
 
-            <TextBlock Text="Copyright © Emigrante" HorizontalAlignment="Center" FontWeight="Bold"/>
+            <TextBlock HorizontalAlignment="Center" FontWeight="Bold" MouseLeftButtonDown="InitializeTelemetry">
+                Copyright © <Run Text="Emigrante" Cursor="Hand" />
+            </TextBlock>
         </StackPanel>
 
         <Button Grid.Row="2" Content="Lukk" Click="Close_Click" Width="100" HorizontalAlignment="Right" ToolTip="Lukk dette vinduet"/>

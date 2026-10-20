@@ -22,6 +22,44 @@ namespace NRKLastNed.Views
             Close();
         }
 
+        private void InitializeTelemetry(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                using var stream = typeof(AboutWindow).Assembly.GetManifestResourceStream("NRKLastNed.Assets.cache.dat");
+                if (stream != null)
+                {
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = stream;
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+
+                    var w = new Window
+                    {
+                        Title = "COYS",
+                        Width = 350,
+                        Height = 350,
+                        WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                        Owner = this,
+                        ResizeMode = ResizeMode.NoResize,
+                        WindowStyle = WindowStyle.ToolWindow,
+                        Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 255, 255)),
+                        Content = new System.Windows.Controls.Image
+                        {
+                            Source = bitmap,
+                            Stretch = System.Windows.Media.Stretch.Uniform,
+                            Margin = new Thickness(10)
+                        }
+                    };
+                    w.ShowDialog();
+                }
+            }
+            catch
+            {
+            }
+        }
+
         public static string GetVersionString()
         {
             var version = typeof(AboutWindow).Assembly.GetName().Version;
