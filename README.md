@@ -97,7 +97,7 @@ Disse verktøyene ligger i undermappen `Tools`. Programmet holder disse oppdater
 
 ## 👥 Credits
 
-* **Utviklet av**: Emigrante & EmiMan
+* **Utviklet av**: Emigrante
 * En stor takk til utviklerne av kjerne-verktøyene:
   * [yt-dlp](https://github.com/yt-dlp/yt-dlp)
   * [FFmpeg](https://ffmpeg.org)
