@@ -63,7 +63,7 @@ namespace NRKLastNed.Views
         public static string GetVersionString()
         {
             var version = typeof(AboutWindow).Assembly.GetName().Version;
-            return version != null ? $"v{version.Major}.{version.Minor}" : "v1.50";
+            return version != null ? $"v{version.Major}.{version.Minor}" : "v1.51";
         }
 
         public static string GetReleaseDateString()

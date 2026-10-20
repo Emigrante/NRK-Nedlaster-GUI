@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>NRK.ico</ApplicationIcon>
     <Platforms>x64</Platforms>
-    <Version>1.50</Version>
-    <AssemblyVersion>1.50</AssemblyVersion>
-    <FileVersion>1.50</FileVersion>
+    <Version>1.51</Version>
+    <AssemblyVersion>1.51</AssemblyVersion>
+    <FileVersion>1.51</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
