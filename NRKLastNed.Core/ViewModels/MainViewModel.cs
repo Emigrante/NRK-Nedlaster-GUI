@@ -91,6 +91,8 @@ namespace NRKLastNed.Core.ViewModels
 
             LogService.Log("Applikasjon startet", LogLevel.Info, _settings);
 
+            // Forhåndsvarm GPU/FFmpeg-deteksjon i bakgrunnen ved oppstart slik at rekoding starter umiddelbart etter nedlasting
+            _ = HardwareEncoderService.GetCapabilitiesAsync(_platform.GetToolPath("ffmpeg"));
             _ = CheckAppUpdateSilentAsync();
         }
 
@@ -248,6 +250,7 @@ namespace NRKLastNed.Core.ViewModels
             _settings = AppSettings.Load();
             _service = new YtDlpService(_settings, _platform);
             LogService.Log("Innstillinger oppdatert", LogLevel.Info, _settings);
+            _ = HardwareEncoderService.GetCapabilitiesAsync(_platform.GetToolPath("ffmpeg"));
             _ = CheckAppUpdateSilentAsync();
         }
 
@@ -276,13 +279,13 @@ namespace NRKLastNed.Core.ViewModels
                     if (hasApp) parts.Add("Programmet");
                     if (hasYt) parts.Add("yt-dlp");
                     if (hasFfmpeg) parts.Add("FFmpeg");
-                    
+
                     if (parts.Count == 1)
                         UpdateTooltipText = $"Det finnes en ny versjon av {parts[0]}.\nKlikk her for å åpne innstillinger og oppdatere.";
                     else if (parts.Count == 2)
                         UpdateTooltipText = $"Det finnes ny versjon av {parts[0]} og {parts[1]}.\nKlikk her for å åpne innstillinger og oppdatere.";
                     else
-                        UpdateTooltipText = $"Det finnes ny versjon av Programmet, yt-dlp og FFmpeg.\nKlikk her for å åpne innstillinger og oppdatere.";
+                        UpdateTooltipText = "Det finnes ny versjon av Programmet, yt-dlp og FFmpeg.\nKlikk her for å åpne innstillinger og oppdatere.";
                 }
                 else
                 {
@@ -357,6 +360,8 @@ namespace NRKLastNed.Core.ViewModels
         private void RemoveFinishedItems()
         {
             var finished = DownloadItems.Where(i => i.Status == "Ferdig").ToList();
+            if (finished.Count == 0) return;
+
             foreach (var item in finished)
             {
                 DownloadItems.Remove(item);
@@ -486,7 +491,6 @@ namespace NRKLastNed.Core.ViewModels
 
             LogService.Log($"Starter batch nedlasting av {totalCount} filer", LogLevel.Info, _settings);
 
-            // Signal til View-laget at nedlasting er startet
             DownloadStarted?.Invoke(this, EventArgs.Empty);
 
             try
@@ -503,17 +507,14 @@ namespace NRKLastNed.Core.ViewModels
                     item.Status = "Laster ned...";
                     item.Progress = 0;
 
-                    // Signal per element
                     DownloadItemStarted?.Invoke(this, (displayName, currentIndex, totalCount));
 
                     double currentDownloadPercent = 0;
                     double currentProcessingPercent = 0;
+                    int idx = currentIndex;
 
-                    var progressText = new Progress<string>(t =>
+                    void RaiseDetailedProgress()
                     {
-                        item.Status = t;
-                        _progressBatcher.QueueNotification(nameof(DownloadItems));
-                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
                         ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
                         {
                             Status = item.Status,
@@ -521,16 +522,24 @@ namespace NRKLastNed.Core.ViewModels
                             ProcessingPercent = currentProcessingPercent,
                             OverallPercent = item.Progress,
                             TotalBatchPercent = TotalProgress,
-                            CurrentFileIndex = currentIndex,
+                            CurrentFileIndex = idx,
                             TotalFilesCount = totalCount
                         });
+                    }
+
+                    var progressText = new Progress<string>(t =>
+                    {
+                        item.Status = t;
+                        _progressBatcher.QueueNotification(nameof(DownloadItems));
+                        DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
+                        RaiseDetailedProgress();
                     });
 
                     var progressPercent = new Progress<double>(p =>
                     {
                         item.Progress = p;
 
-                        double overallProgress = ((currentIndex - 1) * 100.0 + p) / totalCount;
+                        double overallProgress = ((idx - 1) * 100.0 + p) / totalCount;
                         TotalProgress = overallProgress;
 
                         _progressBatcher.QueueNotification(nameof(TotalProgress));
@@ -541,34 +550,13 @@ namespace NRKLastNed.Core.ViewModels
                     var downloadStepProgress = new Progress<double>(dp =>
                     {
                         currentDownloadPercent = dp;
-                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
-                        {
-                            Status = item.Status,
-                            DownloadPercent = currentDownloadPercent,
-                            ProcessingPercent = currentProcessingPercent,
-                            OverallPercent = item.Progress,
-                            TotalBatchPercent = TotalProgress,
-                            CurrentFileIndex = currentIndex,
-                            TotalFilesCount = totalCount
-                        });
                     });
 
                     var processingStepProgress = new Progress<double>(pp =>
                     {
                         currentProcessingPercent = pp;
-                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
-                        {
-                            Status = item.Status,
-                            DownloadPercent = currentDownloadPercent,
-                            ProcessingPercent = currentProcessingPercent,
-                            OverallPercent = item.Progress,
-                            TotalBatchPercent = TotalProgress,
-                            CurrentFileIndex = currentIndex,
-                            TotalFilesCount = totalCount
-                        });
                     });
 
-                    // Sender rå prosessoutput videre til View-laget
                     var rawOutputProgress = new Progress<string>(line =>
                     {
                         RawOutputReceived?.Invoke(this, line);
@@ -581,16 +569,7 @@ namespace NRKLastNed.Core.ViewModels
                         item.Progress = 100;
                         currentDownloadPercent = 100;
                         currentProcessingPercent = 100;
-                        ItemDetailedProgress?.Invoke(this, new ItemProgressEventArgs
-                        {
-                            Status = "Ferdig",
-                            DownloadPercent = 100,
-                            ProcessingPercent = 100,
-                            OverallPercent = 100,
-                            TotalBatchPercent = TotalProgress,
-                            CurrentFileIndex = currentIndex,
-                            TotalFilesCount = totalCount
-                        });
+                        RaiseDetailedProgress();
                         DownloadItemProgress?.Invoke(this, (item.Status, item.Progress));
                     }
                     catch (OperationCanceledException)
@@ -627,7 +606,6 @@ namespace NRKLastNed.Core.ViewModels
                 _cts?.Dispose();
                 _cts = null;
 
-                // Signal at nedlasting er fullført
                 DownloadCompleted?.Invoke(this, EventArgs.Empty);
             }
         }

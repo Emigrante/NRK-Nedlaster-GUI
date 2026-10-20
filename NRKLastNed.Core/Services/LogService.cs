@@ -9,7 +9,8 @@ namespace NRKLastNed.Core.Services
     {
         private static readonly object _lock = new();
         private static readonly string _logFolder;
-        private static string? _currentLogDate;
+        private static int _currentDayOfYear = -1;
+        private static int _currentYear = -1;
         private static StreamWriter? _writer;
 
         static LogService()
@@ -36,27 +37,34 @@ namespace NRKLastNed.Core.Services
             if (settings != null && (!settings.EnableLogging || level > settings.LogLevel))
                 return;
 
-            string nowFormatted = DateTime.Now.ToString("HH:mm:ss");
-            string today = DateTime.Now.ToString("yyyy-MM-dd");
-            string logLine = $"[{nowFormatted}] [{level}] {message}";
+            DateTime now = DateTime.Now;
 
             lock (_lock)
             {
                 try
                 {
-                    EnsureWriter(today);
-                    _writer?.WriteLine(logLine);
+                    EnsureWriter(now);
+                    if (_writer != null)
+                    {
+                        _writer.WriteLine($"[{now:HH:mm:ss}] [{level}] {message}");
+
+                        // Tving kun umiddelbar disk-flush på Info/Error, slik at Debug-logging ikke bremser nedlasting
+                        if (level <= LogLevel.Info)
+                        {
+                            _writer.Flush();
+                        }
+                    }
                 }
                 catch
                 {
-                    // Ignorer feil for a ikke krasje appen
+                    // Ignorer feil for å ikke krasje appen
                 }
             }
         }
 
-        private static void EnsureWriter(string today)
+        private static void EnsureWriter(DateTime now)
         {
-            if (_writer != null && _currentLogDate == today)
+            if (_writer != null && _currentDayOfYear == now.DayOfYear && _currentYear == now.Year)
                 return;
 
             FlushAndClose();
@@ -68,12 +76,13 @@ namespace NRKLastNed.Core.Services
                     Directory.CreateDirectory(_logFolder);
                 }
 
-                string fileName = $"log_{today}.txt";
+                string fileName = $"log_{now:yyyy-MM-dd}.txt";
                 string filePath = Path.Combine(_logFolder, fileName);
 
-                var fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite);
-                _writer = new StreamWriter(fileStream, Encoding.UTF8) { AutoFlush = true };
-                _currentLogDate = today;
+                var fileStream = new FileStream(filePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, bufferSize: 4096);
+                _writer = new StreamWriter(fileStream, Encoding.UTF8, bufferSize: 4096) { AutoFlush = false };
+                _currentDayOfYear = now.DayOfYear;
+                _currentYear = now.Year;
             }
             catch
             {
@@ -92,7 +101,8 @@ namespace NRKLastNed.Core.Services
             finally
             {
                 _writer = null;
-                _currentLogDate = null;
+                _currentDayOfYear = -1;
+                _currentYear = -1;
             }
         }
     }
