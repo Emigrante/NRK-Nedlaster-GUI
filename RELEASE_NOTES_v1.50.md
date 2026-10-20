@@ -1,6 +1,6 @@
-# NRK Nedlaster GUI – Versjon 1.5 🚀
+# NRK Nedlaster GUI – Versjon 1.50 🚀
 
-Velkommen til **versjon 1.5** av NRK Nedlaster GUI! Dette er en omfattende oppgradering med et helt nytt og mer flytende grensesnitt, støtte for nye videokodekser (HEVC og AV1), automatisk GPU-maskinvareakselerasjon, et eget live nedlastings- og bearbeidingsvindu, automatisk verktøykontroll og standardisert filnavngiving.
+Velkommen til **versjon 1.50** av NRK Nedlaster GUI! Dette er en omfattende oppgradering med et helt nytt og mer flytende grensesnitt, støtte for nye videokodekser (HEVC og AV1), automatisk GPU-maskinvareakselerasjon, et eget live nedlastings- og bearbeidingsvindu, automatisk verktøykontroll og standardisert filnavngiving.
 
 ---
 
