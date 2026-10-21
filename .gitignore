@@ -509,3 +509,9 @@ copilot-instructions.md
 .system_generated/
 *.prompt.md
 
+
+# Release notes (publiseres kun på GitHub Releases, ikke i repoet)
+RELEASE_NOTES*.md
+release_notes*.md
+RELEASE-NOTES*.md
+release-notes*.md
